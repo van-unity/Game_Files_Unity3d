@@ -12,6 +12,7 @@ public class SC_GameVariables : MonoBehaviour
     public int dropHeight = 0;
     public float gemSpeed;
     public float scoreSpeed = 5;
+    public float minSwipeDistance = 7;
     
     [HideInInspector]
     public int rowsSize = 7;

@@ -169,8 +169,18 @@ public class SC_GameLogic : MonoBehaviour
                 SC_Gem _curGem = gameBoard.GetGem(x,y);
                 if (_curGem == null)
                 {
-                    int gemToUse = Random.Range(0, SC_GameVariables.Instance.gems.Length);
-                    SpawnGem(new Vector2Int(x, y), SC_GameVariables.Instance.gems[gemToUse]);
+                    // int gemToUse = Random.Range(0, SC_GameVariables.Instance.gems.Length);
+                    // SpawnGem(new Vector2Int(x, y), SC_GameVariables.Instance.gems[gemToUse]);
+                    int _gemToUse = Random.Range(0, SC_GameVariables.Instance.gems.Length);
+
+                    int iterations = 0;
+                    while (gameBoard.MatchesAt(new Vector2Int(x, y), SC_GameVariables.Instance.gems[_gemToUse]) && iterations < 100)
+                    {
+                        _gemToUse = Random.Range(0, SC_GameVariables.Instance.gems.Length);
+                        iterations++;
+                    }
+                    
+                    SpawnGem(new Vector2Int(x, y), SC_GameVariables.Instance.gems[_gemToUse]);
                 }
             }
         }
