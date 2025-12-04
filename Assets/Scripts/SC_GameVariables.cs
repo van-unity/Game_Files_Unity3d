@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class SC_GameVariables : MonoBehaviour
 {
-    public GameObject bgTilePrefabs;
     public SC_Gem bomb;
     public SC_Gem[] gems;
     public float bonusAmount = 0.5f;
@@ -13,6 +13,8 @@ public class SC_GameVariables : MonoBehaviour
     public float gemSpeed;
     public float scoreSpeed = 5;
     public float minSwipeDistance = 7;
+    public float gemSwapDuration = .25f;
+    public Ease gemSwapEase = Ease.OutQuad;
     
     [HideInInspector]
     public int rowsSize = 7;
