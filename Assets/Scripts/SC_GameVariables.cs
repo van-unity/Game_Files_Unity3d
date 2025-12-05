@@ -5,8 +5,6 @@ using UnityEngine;
 
 public class SC_GameVariables : MonoBehaviour
 {
-    public SC_Gem bomb;
-    public SC_Gem[] gems;
     public float bonusAmount = 0.5f;
     public float bombChance = 2f;
     public int dropHeight = 0;

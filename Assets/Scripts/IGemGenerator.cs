@@ -23,6 +23,10 @@ public class GemGenerator : IGemGenerator {
             iterations++;
         }
 
+        if (iterations > 100) {
+            Debug.LogError($"Had to generate: {gemType}");
+        }
+        
         return gemType;
     }
 }

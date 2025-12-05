@@ -2,26 +2,25 @@
 using System.Linq;
 using UnityEngine;
 
-public readonly struct GemPosition {
-    public readonly GlobalEnums.GemType type;
-    public readonly Vector2Int pos;
-
-    public GemPosition(GlobalEnums.GemType type, Vector2Int pos) {
-        this.type = type;
-        this.pos = pos;
-    }
-}
-
 public class ResolveResult {
-    public IEnumerable<Vector2Int> CollectedGems { get; }
+    public IEnumerable<CollectedGemInfo> CollectedGems { get; }
     public IEnumerable<ChangeInfo> Changes { get; }
 
-    public ResolveResult(IEnumerable<Vector2Int> collectedGems, IEnumerable<ChangeInfo> changes) {
+    public ResolveResult(IEnumerable<CollectedGemInfo> collectedGems, IEnumerable<ChangeInfo> changes) {
         CollectedGems = collectedGems;
         Changes = changes;
     }
 }
 
+public readonly struct CollectedGemInfo {
+    public readonly Vector2Int position;
+    public readonly GlobalEnums.GemType gemType;
+
+    public CollectedGemInfo(Vector2Int position, GlobalEnums.GemType gemType) {
+        this.position = position;
+        this.gemType = gemType;
+    }
+}
 
 public class ChangeInfo {
     public readonly GlobalEnums.GemType gemType;
@@ -45,20 +44,11 @@ public class GameBoard {
 
     private readonly IGemGenerator _gemGenerator;
 
+    public int Height { get; }
 
-    private int height = 0;
+    public int Width { get; }
 
-    public int Height {
-        get { return height; }
-    }
-
-    private int width = 0;
-
-    public int Width {
-        get { return width; }
-    }
-
-    private GlobalEnums.GemType[,] allGems;
+    private readonly GlobalEnums.GemType[,] _state;
 
     private int score = 0;
 
@@ -67,36 +57,62 @@ public class GameBoard {
         set { score = value; }
     }
 
-    // private List<GlobalEnums.GemType> currentMatches = new();
-    //
-    // public List<GlobalEnums.GemType> CurrentMatches {
-    //     get { return currentMatches; }
-    // }
-
     #endregion
 
-    public GameBoard(int _Width, int _Height, IGemGenerator gemGenerator) {
-        height = _Height;
-        width = _Width;
+    public GameBoard(int width, int height, IGemGenerator gemGenerator) {
+        Width = width;
+        Height = height;
         _gemGenerator = gemGenerator;
-        allGems = new GlobalEnums.GemType[width, height];
-        Initialize();
+        _state = new GlobalEnums.GemType[width, height];
     }
 
     public void Initialize() {
         for (int x = 0; x < Width; x++) {
             for (int y = 0; y < Height; y++) {
-                allGems[x, y] = _gemGenerator.Execute(new Vector2Int(x, y), this);
+                _state[x, y] = _gemGenerator.Execute(new Vector2Int(x, y), this);
             }
         }
     }
 
     public bool MatchesAt(Vector2Int pos, GlobalEnums.GemType gemType) {
-        if (pos.x > 1 && allGems[pos.x - 1, pos.y] == gemType && allGems[pos.x - 2, pos.y] == gemType) {
+        if (!IsValidPos(pos)) {
+            return false;
+        }
+
+        // Check horizontal matches (3 possible formations)
+
+        // 1. Formation: [Type] [Type] [POS] (Checks two left neighbors)
+        if (pos.x >= 2 && _state[pos.x - 2, pos.y] == gemType && _state[pos.x - 1, pos.y] == gemType) {
             return true;
         }
 
-        if (pos.y > 1 && allGems[pos.x, pos.y - 1] == gemType && allGems[pos.x, pos.y - 2] == gemType) {
+        // 2. Formation: [Type] [POS] [Type] (Checks one left, one right neighbor)
+        if (pos.x >= 1 && pos.x <= Width - 2 && _state[pos.x - 1, pos.y] == gemType &&
+            _state[pos.x + 1, pos.y] == gemType) {
+            return true;
+        }
+
+        // 3. Formation: [POS] [Type] [Type] (Checks two right neighbors)
+        // This formation is redundant for initialization but necessary for gameplay.
+        if (pos.x <= Width - 3 && _state[pos.x + 1, pos.y] == gemType && _state[pos.x + 2, pos.y] == gemType) {
+            return true;
+        }
+
+        // Check vertical matches (3 possible formations)
+
+        // 4. Formation: [Type] [Type] [POS] (Checks two down neighbors)
+        if (pos.y >= 2 && _state[pos.x, pos.y - 2] == gemType && _state[pos.x, pos.y - 1] == gemType) {
+            return true;
+        }
+
+        // 5. Formation: [Type] [POS] [Type] (Checks one down, one up neighbor)
+        if (pos.y >= 1 && pos.y <= Height - 2 && _state[pos.x, pos.y - 1] == gemType &&
+            _state[pos.x, pos.y + 1] == gemType) {
+            return true;
+        }
+
+        // 6. Formation: [POS] [Type] [Type] (Checks two up neighbors)
+        if (pos.y <= Height - 3 && _state[pos.x, pos.y + 1] == gemType && _state[pos.x, pos.y + 2] == gemType) {
             return true;
         }
 
@@ -207,37 +223,34 @@ public class GameBoard {
             return false;
         }
 
-        (allGems[pos1.x, pos1.y], allGems[pos2.x, pos2.y]) = (allGems[pos2.x, pos2.y], allGems[pos1.x, pos1.y]);
+        (_state[pos1.x, pos1.y], _state[pos2.x, pos2.y]) = (_state[pos2.x, pos2.y], _state[pos1.x, pos1.y]);
         return true;
     }
 
-    public bool TryResolve(Vector2Int fromPos, Vector2Int toPos, out ResolveResult result) {
-        if (!TrySwapGems(fromPos, toPos)) {
+    public bool TryResolve(out ResolveResult result) {
+        var matches = GetMatches(_state).ToList();
+        if (matches.Count == 0) {
             result = null;
             return false;
         }
 
-        var matches = GetMatches(allGems).ToList();
-        if (matches.Count == 0) {
-            TrySwapGems(fromPos, toPos);
-            result = null;
-            return false;
-        }
-        
+        var collectedGems = new List<CollectedGemInfo>();
         //remove matches 
         foreach (var match in matches) {
-            allGems[match.x, match.y] = GlobalEnums.GemType.none;
+            collectedGems.Add(new CollectedGemInfo(match, GetAt(match)));
+            _state[match.x, match.y] = GlobalEnums.GemType.none;
         }
 
         //apply special gems(like bomb) 
-        var changes = MoveGemsDown(allGems).Concat(GenerateNewGems(allGems));
+        var changes = MoveGemsDown(_state).Concat(GenerateNewGems(_state));
         //generate new gems 
-        result = new ResolveResult(matches, changes);
+        result = new ResolveResult(collectedGems, changes);
         return true;
     }
 
     private IEnumerable<ChangeInfo> MoveGemsDown(GlobalEnums.GemType[,] board) {
         for (int x = 0; x < Width; x++) {
+            int resolveStep = 0;
             for (int y = 0; y < Height; y++) {
                 if (board[x, y] == GlobalEnums.GemType.none) {
                     continue;
@@ -255,18 +268,17 @@ public class GameBoard {
                     continue;
                 }
 
-                //swap values, value at fromPos will become null
-                (board[fromPos.x, fromPos.y], board[finalPos.x, finalPos.y]) =
-                    (board[finalPos.x, finalPos.y], board[fromPos.x, fromPos.y]);
+                board[finalPos.x, finalPos.y] = board[fromPos.x, fromPos.y];
+                board[fromPos.x, fromPos.y] = GlobalEnums.GemType.none;
 
-                yield return new ChangeInfo(board[finalPos.x, finalPos.y], false, y, fromPos, finalPos);
+                yield return new ChangeInfo(board[finalPos.x, finalPos.y], false, resolveStep++, fromPos, finalPos);
             }
         }
     }
 
     private IEnumerable<ChangeInfo> GenerateNewGems(GlobalEnums.GemType[,] board) {
-        int resolveStep = 0;
         for (int x = 0; x < Width; x++) {
+            int resolveStep = 0;
             for (int y = 0; y < Height; y++) {
                 if (board[x, y] != GlobalEnums.GemType.none) {
                     continue;
@@ -283,8 +295,8 @@ public class GameBoard {
     public IEnumerable<Vector2Int> GetMatches(GlobalEnums.GemType[,] board) {
         var matchedPositions = new HashSet<Vector2Int>();
 
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
+        for (int x = 0; x < Width; x++) {
+            for (int y = 0; y < Height; y++) {
                 if (board[x, y] == GlobalEnums.GemType.none) {
                     continue;
                 }
@@ -296,7 +308,7 @@ public class GameBoard {
                 }
 
                 //horizontal 
-                if (x < width - 2) {
+                if (x < Width - 2) {
                     if (board[x + 1, y] == currentType && board[x + 2, y] == currentType) {
                         matchedPositions.Add(new Vector2Int(x, y));
                         matchedPositions.Add(new Vector2Int(x + 1, y));
@@ -305,7 +317,7 @@ public class GameBoard {
                 }
 
                 // vertical check 
-                if (y < height - 2) {
+                if (y < Height - 2) {
                     if (board[x, y + 1] == currentType && board[x, y + 2] == currentType) {
                         matchedPositions.Add(new Vector2Int(x, y));
                         matchedPositions.Add(new Vector2Int(x, y + 1));
@@ -324,9 +336,12 @@ public class GameBoard {
             return false;
         }
 
-        gem = allGems[pos.x, pos.y];
+        gem = _state[pos.x, pos.y];
         return true;
     }
+
+    public GlobalEnums.GemType GetAt(Vector2Int pos) => _state[pos.x, pos.y];
+    public GlobalEnums.GemType GetAt(int x, int y) => _state[x, y];
 
     public bool TryParseMousePos(Vector3 mousePos, out Vector2Int boardPos) {
         boardPos = new Vector2Int(Mathf.RoundToInt(mousePos.x), Mathf.RoundToInt(mousePos.y));
@@ -335,5 +350,5 @@ public class GameBoard {
     }
 
     public bool IsValidPos(Vector2Int boardPos) =>
-        boardPos.x >= 0 && boardPos.x <= width && boardPos.y >= 0 && boardPos.y <= height;
+        boardPos.x >= 0 && boardPos.x < Width && boardPos.y >= 0 && boardPos.y < Height;
 }
