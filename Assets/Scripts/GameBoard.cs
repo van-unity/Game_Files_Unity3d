@@ -2,53 +2,16 @@
 using System.Linq;
 using UnityEngine;
 
-public class ResolveResult {
-    public IEnumerable<CollectedGemInfo> CollectedGems { get; }
-    public IEnumerable<ChangeInfo> Changes { get; }
-
-    public ResolveResult(IEnumerable<CollectedGemInfo> collectedGems, IEnumerable<ChangeInfo> changes) {
-        CollectedGems = collectedGems;
-        Changes = changes;
-    }
-}
-
-public readonly struct CollectedGemInfo {
-    public readonly Vector2Int position;
-    public readonly GlobalEnums.GemType gemType;
-
-    public CollectedGemInfo(Vector2Int position, GlobalEnums.GemType gemType) {
-        this.position = position;
-        this.gemType = gemType;
-    }
-}
-
-public class ChangeInfo {
-    public readonly GlobalEnums.GemType gemType;
-    public readonly bool wasCreated;
-    public readonly int creationTime;
-    public readonly Vector2Int fromPos;
-    public readonly Vector2Int toPos;
-
-    public ChangeInfo(GlobalEnums.GemType gemType, bool wasCreated, int creationTime, Vector2Int fromPos,
-        Vector2Int toPos) {
-        this.gemType = gemType;
-        this.wasCreated = wasCreated;
-        this.creationTime = creationTime;
-        this.fromPos = fromPos;
-        this.toPos = toPos;
-    }
-}
-
 public class GameBoard {
     #region Variables
 
     private readonly IGemGenerator _gemGenerator;
+    private readonly GemType[,] _state;
 
     public int Height { get; }
 
     public int Width { get; }
 
-    private readonly GlobalEnums.GemType[,] _state;
 
     private int score = 0;
 
@@ -63,7 +26,7 @@ public class GameBoard {
         Width = width;
         Height = height;
         _gemGenerator = gemGenerator;
-        _state = new GlobalEnums.GemType[width, height];
+        _state = new GemType[width, height];
     }
 
     public void Initialize() {
@@ -74,7 +37,7 @@ public class GameBoard {
         }
     }
 
-    public bool MatchesAt(Vector2Int pos, GlobalEnums.GemType gemType) {
+    public bool MatchesAt(Vector2Int pos, GemType gemType) {
         if (!IsValidPos(pos)) {
             return false;
         }
@@ -238,7 +201,7 @@ public class GameBoard {
         //remove matches 
         foreach (var match in matches) {
             collectedGems.Add(new CollectedGemInfo(match, GetAt(match)));
-            _state[match.x, match.y] = GlobalEnums.GemType.none;
+            _state[match.x, match.y] = GemType.none;
         }
 
         //apply special gems(like bomb) 
@@ -248,18 +211,18 @@ public class GameBoard {
         return true;
     }
 
-    private IEnumerable<ChangeInfo> MoveGemsDown(GlobalEnums.GemType[,] board) {
+    private IEnumerable<ChangeInfo> MoveGemsDown(GemType[,] board) {
         for (int x = 0; x < Width; x++) {
             int resolveStep = 0;
             for (int y = 0; y < Height; y++) {
-                if (board[x, y] == GlobalEnums.GemType.none) {
+                if (board[x, y] == GemType.none) {
                     continue;
                 }
 
                 var fromPos = new Vector2Int(x, y);
                 var finalPos = fromPos;
                 var belowPos = new Vector2Int(x, y - 1);
-                while (IsValidPos(belowPos) && board[belowPos.x, belowPos.y] == GlobalEnums.GemType.none) {
+                while (IsValidPos(belowPos) && board[belowPos.x, belowPos.y] == GemType.none) {
                     finalPos = belowPos;
                     belowPos = new Vector2Int(belowPos.x, belowPos.y - 1);
                 }
@@ -269,18 +232,18 @@ public class GameBoard {
                 }
 
                 board[finalPos.x, finalPos.y] = board[fromPos.x, fromPos.y];
-                board[fromPos.x, fromPos.y] = GlobalEnums.GemType.none;
+                board[fromPos.x, fromPos.y] = GemType.none;
 
                 yield return new ChangeInfo(board[finalPos.x, finalPos.y], false, resolveStep++, fromPos, finalPos);
             }
         }
     }
 
-    private IEnumerable<ChangeInfo> GenerateNewGems(GlobalEnums.GemType[,] board) {
+    private IEnumerable<ChangeInfo> GenerateNewGems(GemType[,] board) {
         for (int x = 0; x < Width; x++) {
             int resolveStep = 0;
             for (int y = 0; y < Height; y++) {
-                if (board[x, y] != GlobalEnums.GemType.none) {
+                if (board[x, y] != GemType.none) {
                     continue;
                 }
 
@@ -292,18 +255,18 @@ public class GameBoard {
         }
     }
 
-    public IEnumerable<Vector2Int> GetMatches(GlobalEnums.GemType[,] board) {
+    public IEnumerable<Vector2Int> GetMatches(GemType[,] board) {
         var matchedPositions = new HashSet<Vector2Int>();
 
         for (int x = 0; x < Width; x++) {
             for (int y = 0; y < Height; y++) {
-                if (board[x, y] == GlobalEnums.GemType.none) {
+                if (board[x, y] == GemType.none) {
                     continue;
                 }
 
                 var currentType = board[x, y];
 
-                if (currentType == GlobalEnums.GemType.none) {
+                if (currentType == GemType.none) {
                     continue;
                 }
 
@@ -330,9 +293,9 @@ public class GameBoard {
         return matchedPositions;
     }
 
-    public bool TryGetGem(Vector2Int pos, out GlobalEnums.GemType gem) {
+    public bool TryGetGem(Vector2Int pos, out GemType gem) {
         if (!IsValidPos(pos)) {
-            gem = GlobalEnums.GemType.none;
+            gem = GemType.none;
             return false;
         }
 
@@ -340,8 +303,8 @@ public class GameBoard {
         return true;
     }
 
-    public GlobalEnums.GemType GetAt(Vector2Int pos) => _state[pos.x, pos.y];
-    public GlobalEnums.GemType GetAt(int x, int y) => _state[x, y];
+    public GemType GetAt(Vector2Int pos) => _state[pos.x, pos.y];
+    public GemType GetAt(int x, int y) => _state[x, y];
 
     public bool TryParseMousePos(Vector3 mousePos, out Vector2Int boardPos) {
         boardPos = new Vector2Int(Mathf.RoundToInt(mousePos.x), Mathf.RoundToInt(mousePos.y));

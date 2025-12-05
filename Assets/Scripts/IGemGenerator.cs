@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public interface IGemGenerator {
-    GlobalEnums.GemType Execute(Vector2Int pos, GameBoard board);
+    GemType Execute(Vector2Int pos, GameBoard board);
 }
 
 public class GemGenerator : IGemGenerator {
@@ -11,9 +11,9 @@ public class GemGenerator : IGemGenerator {
         _gameVariables = gameVariables;
     }
 
-    public GlobalEnums.GemType Execute(Vector2Int pos, GameBoard board) {
+    public GemType Execute(Vector2Int pos, GameBoard board) {
         if (Random.Range(0, 100f) < _gameVariables.bombChance)
-            return GlobalEnums.GemType.bomb;
+            return GemType.bomb;
 
         var gemType = GemTypeExtensions.AllGemTypes[Random.Range(0, GemTypeExtensions.GemTypeCount)];
         var iterations = 0;

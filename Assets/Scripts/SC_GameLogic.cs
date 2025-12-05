@@ -15,11 +15,10 @@ public class SC_GameLogic : MonoBehaviour {
     private int score = 0;
     private float displayScore = 0;
     private GameBoard gameBoard;
-    private GlobalEnums.GameState currentState = GlobalEnums.GameState.move;
-
     private GameObject[,] gems;
     private CancellationTokenSource _cts = new();
     private GemPool _gemPool;
+    private bool _canMove;
 
     #region MonoBehaviour
 
@@ -27,11 +26,9 @@ public class SC_GameLogic : MonoBehaviour {
         Init();
     }
 
-    private async void Start() {
+    private void Start() {
         StartGame();
-        await Task.Delay(3000);
-
-        var destroyEffect = _gemPool.GetDestroyEffect(GlobalEnums.GemType.yellow);
+        _canMove = true;
     }
 
     private void Update() {
@@ -81,7 +78,7 @@ public class SC_GameLogic : MonoBehaviour {
         unityObjects["Txt_Score"].GetComponent<TextMeshProUGUI>().text = score.ToString("0");
     }
 
-    private GameObject SpawnGem(Vector2Int pos, GlobalEnums.GemType gemType) {
+    private GameObject SpawnGem(Vector2Int pos, GemType gemType) {
         var gem = _gemPool.GetGem(gemType);
         gem.transform.position = new Vector3(pos.x, pos.y, 0);
         gem.transform.SetParent(unityObjects["GemsHolder"].transform);
@@ -100,11 +97,11 @@ public class SC_GameLogic : MonoBehaviour {
     }
 
     private async Task HandleSwipe(SwipeArgs args, CancellationToken ct = default) {
-        if (currentState == GlobalEnums.GameState.wait) {
+        if (!_canMove) {
             return;
         }
 
-        currentState = GlobalEnums.GameState.wait;
+        _canMove = false;
 
         try {
             var selectedGemPos = args.startPos.ToVector2Int();
@@ -131,7 +128,7 @@ public class SC_GameLogic : MonoBehaviour {
             Debug.LogException(e);
         }
         finally {
-            currentState = GlobalEnums.GameState.move;
+            _canMove = true;
         }
     }
 
@@ -207,15 +204,7 @@ public class SC_GameLogic : MonoBehaviour {
                 destroySequence.Join(
                     DOTween.Sequence()
                         .AppendInterval(duration)
-                        .AppendCallback(() => {
-                            try {
-                                _gemPool.ReleaseDestroyEffect(gemType, destroyEffect);
-                            }
-                            catch (Exception e) {
-                                Debug.LogError(gemType);
-                                Debug.Break();
-                            }
-                        })
+                        .AppendCallback(() => { _gemPool.ReleaseDestroyEffect(gemType, destroyEffect); })
                 );
             }
 

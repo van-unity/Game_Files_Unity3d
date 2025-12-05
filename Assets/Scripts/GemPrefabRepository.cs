@@ -7,7 +7,7 @@ using UnityEngine;
 public class GemPrefabRepository : ScriptableObject {
     [SerializeField] private GemPrefabConfiguration[] _gemPrefabs;
 
-    private Dictionary<GlobalEnums.GemType, GemPrefabConfiguration> _prefabsLookup;
+    private Dictionary<GemType, GemPrefabConfiguration> _prefabsLookup;
 
     private void OnEnable() {
         if (_gemPrefabs == null) {
@@ -17,7 +17,7 @@ public class GemPrefabRepository : ScriptableObject {
         _prefabsLookup = _gemPrefabs.ToDictionary(gemPrefab => gemPrefab.GemType, gemPrefab => gemPrefab);
     }
 
-    public GameObject GetGemPrefab(GlobalEnums.GemType gemType) {
+    public GameObject GetGemPrefab(GemType gemType) {
         if (!_prefabsLookup.TryGetValue(gemType, out var prefabConfig)) {
             return null;
         }
@@ -25,7 +25,7 @@ public class GemPrefabRepository : ScriptableObject {
         return prefabConfig.GemPrefab;
     }
 
-    public DestroyEffectConfiguration GetDestroyEffect(GlobalEnums.GemType gemType) {
+    public DestroyEffectConfiguration GetDestroyEffect(GemType gemType) {
         if (!_prefabsLookup.TryGetValue(gemType, out var prefabConfig)) {
             return null;
         }

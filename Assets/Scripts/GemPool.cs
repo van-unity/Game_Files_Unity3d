@@ -5,19 +5,19 @@ public class GemPool {
     private const int POOL_SIZE = 50;
     private const int POOL_GROW_AMOUNT = 10;
 
-    private readonly Dictionary<GlobalEnums.GemType, GameObjectPool> _gemPools;
-    private readonly Dictionary<GlobalEnums.GemType, GameObjectPool> _destroyEffectPools;
+    private readonly Dictionary<GemType, GameObjectPool> _gemPools;
+    private readonly Dictionary<GemType, GameObjectPool> _destroyEffectPools;
     private readonly GemPrefabRepository _gemPrefabRepository;
 
     public GemPool(GemPrefabRepository gemPrefabRepository) {
         _gemPrefabRepository = gemPrefabRepository;
         //no pool for GemType.None 
-        _gemPools = new Dictionary<GlobalEnums.GemType, GameObjectPool>(GemTypeExtensions.GemTypeCount - 1);
-        _destroyEffectPools = new Dictionary<GlobalEnums.GemType, GameObjectPool>(GemTypeExtensions.GemTypeCount - 1);
+        _gemPools = new Dictionary<GemType, GameObjectPool>(GemTypeExtensions.GemTypeCount - 1);
+        _destroyEffectPools = new Dictionary<GemType, GameObjectPool>(GemTypeExtensions.GemTypeCount - 1);
         Initialize();
     }
 
-    public GameObject GetGem(GlobalEnums.GemType gemType) {
+    public GameObject GetGem(GemType gemType) {
         if (!_gemPools.TryGetValue(gemType, out var pool)) {
             throw new KeyNotFoundException($"Gem {gemType} not found");
         }
@@ -25,7 +25,7 @@ public class GemPool {
         return pool.Get();
     }
 
-    public void ReleaseGem(GlobalEnums.GemType gemType, GameObject gem) {
+    public void ReleaseGem(GemType gemType, GameObject gem) {
         if (!_gemPools.TryGetValue(gemType, out var pool)) {
             throw new KeyNotFoundException($"Gem {gemType} not found");
         }
@@ -33,7 +33,7 @@ public class GemPool {
         pool.Release(gem);
     }
 
-    public GameObject GetDestroyEffect(GlobalEnums.GemType gemType) {
+    public GameObject GetDestroyEffect(GemType gemType) {
         if (!_destroyEffectPools.TryGetValue(gemType, out var pool)) {
             throw new KeyNotFoundException($"Gem {gemType} not found");
         }
@@ -41,7 +41,7 @@ public class GemPool {
         return pool.Get();
     }
 
-    public void ReleaseDestroyEffect(GlobalEnums.GemType gemType, GameObject destroyEffect) {
+    public void ReleaseDestroyEffect(GemType gemType, GameObject destroyEffect) {
         if (!_destroyEffectPools.TryGetValue(gemType, out var pool)) {
             throw new KeyNotFoundException($"Gem {gemType} not found");
         }
@@ -51,7 +51,7 @@ public class GemPool {
 
     private void Initialize() {
         foreach (var gemType in GemTypeExtensions.AllGemTypes) {
-            if (gemType == GlobalEnums.GemType.none) {
+            if (gemType == GemType.none) {
                 continue;
             }
 

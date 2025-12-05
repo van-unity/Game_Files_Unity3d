@@ -3,7 +3,7 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "Gem-Prefab-Configuration", menuName = "Match3/Gem Prefab Configuration")]
 public class GemPrefabConfiguration : ScriptableObject {
-    [field: SerializeField] public GlobalEnums.GemType GemType { get; private set; }
+    [field: SerializeField] public GemType GemType { get; private set; }
     [field: SerializeField] public GameObject GemPrefab { get; private set; }
     [field: SerializeField] public DestroyEffectConfiguration DestroyEffectConfiguration { get; private set; }
 }
