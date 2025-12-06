@@ -2,31 +2,70 @@
 using System.Linq;
 using UnityEngine;
 
+public interface IBoardInitializeStrategy {
+    void Execute(GameBoard board);
+}
+
+public class BoardInitializeStrategy : IBoardInitializeStrategy {
+    private const int MAX_ITERATIONS = 100;
+
+    private readonly IMatchCheckStrategy _matchCheckStrategy;
+
+    public BoardInitializeStrategy(IMatchCheckStrategy matchCheckStrategy) {
+        _matchCheckStrategy = matchCheckStrategy;
+    }
+
+    public void Execute(GameBoard board) {
+        var width = board.Width;
+        var height = board.Height;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                var pos = new Vector2Int(x, y);
+                var gemColor = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
+                var iterations = 0;
+
+                while (_matchCheckStrategy.MatchesAtInitialization(board, pos, gemColor) &&
+                       iterations < MAX_ITERATIONS) {
+                    gemColor = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
+                    iterations++;
+                }
+
+                var newGem = new Gem(gemColor, GemType.Regular, 10);
+                board.SetAt(x, y, newGem);
+            }
+        }
+    }
+}
+
 public class GameBoard {
-    private readonly IGemGenerator _gemGenerator;
-    private readonly IMatchCheckStrategy  _matchCheckStrategy;
+    private readonly IBoardInitializeStrategy _initializeStrategy;
+    private readonly IBoardRefillStrategy _refillStrategy;
+    private readonly IMatchCheckStrategy _matchCheckStrategy;
     private readonly Gem[,] _state;
 
     public int Height { get; }
 
     public int Width { get; }
-    
 
-    public GameBoard(int width, int height, IGemGenerator gemGenerator, IMatchCheckStrategy matchCheckStrategy) {
+
+    public GameBoard(
+        int width,
+        int height,
+        IBoardInitializeStrategy initializeStrategy,
+        IBoardRefillStrategy refillStrategy,
+        IMatchCheckStrategy matchCheckStrategy
+    ) {
         Width = width;
         Height = height;
-        _gemGenerator = gemGenerator;
-        _matchCheckStrategy = matchCheckStrategy;
-        _state = new Gem[width, height];
-        Initialize();
-    }
 
-    public void Initialize() {
-        for (int x = 0; x < Width; x++) {
-            for (int y = 0; y < Height; y++) {
-                _state[x, y] = _gemGenerator.Execute(new Vector2Int(x, y), this);
-            }
-        }
+        _initializeStrategy = initializeStrategy;
+        _refillStrategy = refillStrategy;
+        _matchCheckStrategy = matchCheckStrategy;
+
+        _state = new Gem[width, height];
+
+        initializeStrategy.Execute(this);
     }
 
     public bool TrySwapGems(Vector2Int pos1, Vector2Int pos2) {
@@ -38,90 +77,71 @@ public class GameBoard {
         return true;
     }
 
-    public bool TryResolve(out ResolveResult result) {
-        var matches = _matchCheckStrategy.GetMatches(this).ToList();
-        if (matches.Count == 0) {
+    public bool IsValidMove(Vector2Int from, Vector2Int to) {
+        if (!IsValidPos(from) || !IsValidPos(to)) {
+            return false;
+        }
+
+        var gem1 = _state[from.x, from.y];
+        var gem2 = _state[to.x, to.y];
+        if (gem1 == null || gem2 == null) {
+            return false;
+        }
+
+        return _matchCheckStrategy.MatchesAtGameplay(this, to) || _matchCheckStrategy.MatchesAtGameplay(this, from);
+    }
+
+    public bool TryResolveMatches(out List<CollectedGemInfo> result) {
+        var matchPositions = _matchCheckStrategy.GetMatches(this).ToList();
+
+        if (matchPositions.Count == 0) {
             result = null;
             return false;
         }
 
-        var collectedGems = new List<CollectedGemInfo>();
-        //remove matches 
-        foreach (var match in matches) {
-            collectedGems.Add(new CollectedGemInfo(match, GetAt(match)));
+        result = new List<CollectedGemInfo>();
+
+        foreach (var match in matchPositions) {
+            var info = new CollectedGemInfo(match, GetAt(match));
+            result.Add(info);
+
             _state[match.x, match.y] = null;
         }
 
-        //apply special gems(like bomb) 
-        var changes = MoveGemsDown(_state).Concat(GenerateNewGems(_state));
-        //generate new gems 
-        result = new ResolveResult(collectedGems, changes);
         return true;
     }
 
-    private IEnumerable<ChangeInfo> MoveGemsDown(Gem[,] board) {
-        for (int x = 0; x < Width; x++) {
-            int resolveStep = 0;
-            for (int y = 0; y < Height; y++) {
-                if (board[x, y] == null) {
-                    continue;
-                }
+    public List<ChangeInfo> Refill(IEnumerable<CollectedGemInfo> collectedGemInfos)
+        => _refillStrategy.Execute(this, collectedGemInfos);
 
-                var fromPos = new Vector2Int(x, y);
-                var finalPos = fromPos;
-                var belowPos = new Vector2Int(x, y - 1);
-                while (IsValidPos(belowPos) && board[belowPos.x, belowPos.y] == null) {
-                    finalPos = belowPos;
-                    belowPos = new Vector2Int(belowPos.x, belowPos.y - 1);
-                }
+    public Gem GetAt(Vector2Int pos) => !IsValidPos(pos) ? null : _state[pos.x, pos.y];
 
-                if (finalPos.y == fromPos.y) {
-                    continue;
-                }
+    public Gem GetAt(int x, int y) => !IsValidPos(x, y) ? null : _state[x, y];
 
-                board[finalPos.x, finalPos.y] = board[fromPos.x, fromPos.y];
-                board[fromPos.x, fromPos.y] = null;
-
-                yield return new ChangeInfo(board[finalPos.x, finalPos.y], false, resolveStep++, fromPos, finalPos);
-            }
-        }
-    }
-
-    private IEnumerable<ChangeInfo> GenerateNewGems(Gem[,] board) {
-        for (int x = 0; x < Width; x++) {
-            int resolveStep = 0;
-            for (int y = 0; y < Height; y++) {
-                if (board[x, y] != null) {
-                    continue;
-                }
-
-                var pos = new Vector2Int(x, y);
-                var newGemType = _gemGenerator.Execute(pos, this);
-                board[x, y] = newGemType;
-                yield return new ChangeInfo(newGemType, true, resolveStep++, new Vector2Int(x, Height), pos);
-            }
-        }
-    }
-
-    public bool TryGetGem(Vector2Int pos, out Gem gem) {
+    public void SetAt(Vector2Int pos, Gem gem) {
         if (!IsValidPos(pos)) {
-            gem = null;
-            return false;
+            return;
         }
 
-        gem = _state[pos.x, pos.y];
-        return true;
+        _state[pos.x, pos.y] = gem;
     }
 
-    public Gem GetAt(Vector2Int pos) => _state[pos.x, pos.y];
-    public Gem GetAt(int x, int y) => _state[x, y];
+    public void SetAt(int x, int y, Gem gem) {
+        if (!IsValidPos(x, y)) {
+            return;
+        }
 
-    public bool TryParseMousePos(Vector3 mousePos, out Vector2Int boardPos) {
-        boardPos = new Vector2Int(Mathf.RoundToInt(mousePos.x), Mathf.RoundToInt(mousePos.y));
+        _state[x, y] = gem;
+    }
+
+    public bool TryParseMousePos(Vector2 mousePos, out Vector2Int boardPos) {
+        boardPos = mousePos.ToVector2Int();
 
         return IsValidPos(boardPos);
     }
 
     public bool IsValidPos(Vector2Int boardPos) =>
         boardPos.x >= 0 && boardPos.x < Width && boardPos.y >= 0 && boardPos.y < Height;
+
+    public bool IsValidPos(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 }

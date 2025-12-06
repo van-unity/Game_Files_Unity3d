@@ -68,7 +68,7 @@ public class InputManager : MonoBehaviour {
             return;
         }
 
-        var direction = SwipeDirection.None;
+        SwipeDirection direction;
 
         if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y)) {
             direction = delta.x > 0 ? SwipeDirection.Right : SwipeDirection.Left;

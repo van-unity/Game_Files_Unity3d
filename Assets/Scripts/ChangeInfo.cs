@@ -1,11 +1,11 @@
 using UnityEngine;
 
 public class ChangeInfo {
-    public readonly Gem gem;
-    public readonly bool wasCreated;
-    public readonly int creationTime;
-    public readonly Vector2Int fromPos;
-    public readonly Vector2Int toPos;
+    public Gem gem;
+    public bool wasCreated;
+    public int creationTime;
+    public Vector2Int fromPos;
+    public Vector2Int toPos;
 
     public ChangeInfo(Gem gem, bool wasCreated, int creationTime, Vector2Int fromPos,
         Vector2Int toPos) {

@@ -23,24 +23,24 @@ public class GemPool {
     }
 
     public GemView GetGem(Gem gem) {
-        if (!_gemPools.TryGetValue(gem.Color, out var poolByType) || !poolByType.TryGetValue(gem.Type, out var pool)) {
+        if (gem == null || !_gemPools.TryGetValue(gem.Color, out var poolByType) || !poolByType.TryGetValue(gem.Type, out var pool)) {
             return null;
         }
 
         return pool.Get();
     }
 
-    public void ReleaseGem(GemView gem) {
-        if (!_gemPools.TryGetValue(gem.Gem.Color, out var poolByType) ||
-            !poolByType.TryGetValue(gem.Gem.Type, out var pool)) {
+    public void ReleaseGem(GemView gemView) {
+        if (!gemView || !_gemPools.TryGetValue(gemView.Gem.Color, out var poolByType) ||
+            !poolByType.TryGetValue(gemView.Gem.Type, out var pool)) {
             return;
         }
 
-        pool.Return(gem);
+        pool.Return(gemView);
     }
 
     public GemDestroyEffect GetDestroyEffect(Gem gem) {
-        if (!_destroyEffectPools.TryGetValue(gem.Color, out var poolByType) ||
+        if (gem == null || !_destroyEffectPools.TryGetValue(gem.Color, out var poolByType) ||
             !poolByType.TryGetValue(gem.Type, out var pool)) {
             return null;
         }
@@ -49,7 +49,7 @@ public class GemPool {
     }
 
     public void ReleaseDestroyEffect(Gem gem, GemDestroyEffect effect) {
-        if (!_destroyEffectPools.TryGetValue(gem.Color, out var poolByType) ||
+        if (gem == null || !effect || !_destroyEffectPools.TryGetValue(gem.Color, out var poolByType) ||
             !poolByType.TryGetValue(gem.Type, out var pool)) {
             return;
         }

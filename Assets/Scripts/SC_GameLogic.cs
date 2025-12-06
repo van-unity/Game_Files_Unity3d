@@ -20,8 +20,7 @@ public class SC_GameLogic : MonoBehaviour {
     private GemPool _gemPool;
     private bool _canMove;
     private IMatchCheckStrategy _matchCheckStrategy;
-
-    #region MonoBehaviour
+    private GemAbilityProvider _gemAbilityProvider;
 
     private void Awake() {
         Init();
@@ -37,11 +36,8 @@ public class SC_GameLogic : MonoBehaviour {
     //     unityObjects["Txt_Score"].GetComponent<TMPro.TextMeshProUGUI>().text = displayScore.ToString("0");
     // }
 
-    #endregion
-
-    #region Logic
-
     private void Init() {
+        _gemAbilityProvider = new GemAbilityProvider();
         _gemPool = new GemPool(_gemPrefabRepository);
 
         if (_inputManager == null) {
@@ -62,7 +58,8 @@ public class SC_GameLogic : MonoBehaviour {
         gameBoard = new GameBoard(
             SC_GameVariables.Instance.colsSize,
             SC_GameVariables.Instance.rowsSize,
-            new GemGenerator(SC_GameVariables.Instance, _matchCheckStrategy),
+            new BoardInitializeStrategy(_matchCheckStrategy),
+            new BoardRefillStrategy(_matchCheckStrategy),
             _matchCheckStrategy
         );
 
@@ -74,10 +71,13 @@ public class SC_GameLogic : MonoBehaviour {
 
         for (int x = 0; x < gameBoard.Width; x++)
             for (int y = 0; y < gameBoard.Height; y++) {
-                var pos = new Vector2Int(x, y);
-                if (gameBoard.TryGetGem(pos, out var gemType)) {
-                    gems[x, y] = SpawnGem(pos, gemType);
+                var gem = gameBoard.GetAt(x, y);
+                if (gem == null) {
+                    continue;
                 }
+
+                var pos = new Vector2Int(x, y);
+                gems[x, y] = SpawnGem(pos, gem);
             }
     }
 
@@ -94,7 +94,10 @@ public class SC_GameLogic : MonoBehaviour {
         return gemView;
     }
 
-    #endregion
+    public GemView GetGemAt(int x, int y) => !gameBoard.IsValidPos(x, y) ? null : gems[x, y];
+
+    public GemView GetGemAt(Vector2Int pos) => !gameBoard.IsValidPos(pos.x, pos.y) ? null : gems[pos.x, pos.y];
+
 
     private void OnEnable() {
         _inputManager.Swiped += OnSwiped;
@@ -112,7 +115,9 @@ public class SC_GameLogic : MonoBehaviour {
         _canMove = false;
 
         try {
-            var selectedGemPos = args.startPos.ToVector2Int();
+            if (!gameBoard.TryParseMousePos(args.startPos, out var selectedGemPos)) {
+                return;
+            }
 
             var destGemPos = args.swipeDirection switch {
                 SwipeDirection.Right => new Vector2Int(selectedGemPos.x + 1, selectedGemPos.y),
@@ -122,15 +127,31 @@ public class SC_GameLogic : MonoBehaviour {
                 _ => new Vector2Int(-1, -1)
             };
 
-            if (!gameBoard.IsValidPos(selectedGemPos) || !gameBoard.IsValidPos(destGemPos)) {
+            if (!gameBoard.IsValidPos(destGemPos)) {
                 return;
             }
 
-            var swapResult = await IsMatch(selectedGemPos, destGemPos, ct);
-
-            if (swapResult) {
-                await HandleMatches(ct);
+            if (!gameBoard.TrySwapGems(selectedGemPos, destGemPos)) {
+                return;
             }
+
+            var gem1 = gems[selectedGemPos.x, selectedGemPos.y];
+            var gem2 = gems[destGemPos.x, destGemPos.y];
+
+            var isMatch = gameBoard.IsValidMove(selectedGemPos, destGemPos);
+
+            await SwapAnimation(gem1.Transform, gem2.Transform, ct);
+
+            if (!isMatch) {
+                gameBoard.TrySwapGems(selectedGemPos, destGemPos);
+                await SwapAnimation(gem1.Transform, gem2.Transform, ct);
+                return;
+            }
+
+            (gems[selectedGemPos.x, selectedGemPos.y], gems[destGemPos.x, destGemPos.y]) = (
+                gems[destGemPos.x, destGemPos.y], gems[selectedGemPos.x, selectedGemPos.y]);
+
+            await HandleMatches(ct);
         }
         catch (Exception e) {
             Debug.LogException(e);
@@ -138,30 +159,6 @@ public class SC_GameLogic : MonoBehaviour {
         finally {
             _canMove = true;
         }
-    }
-
-    private async Task<bool> IsMatch(Vector2Int pos1, Vector2Int pos2, CancellationToken ct = default) {
-        if (!gameBoard.TrySwapGems(pos1, pos2)) {
-            return false;
-        }
-
-        var gem1 = gems[pos1.x, pos1.y].Transform;
-        var gem2 = gems[pos2.x, pos2.y].Transform;
-
-        var isMatch = _matchCheckStrategy.MatchesAt(gameBoard, pos1, gameBoard.GetAt(pos1).Color) ||
-                      _matchCheckStrategy.MatchesAt(gameBoard, pos2, gameBoard.GetAt(pos2).Color);
-
-        await SwapAnimation(gem1, gem2, ct);
-
-        if (!isMatch) {
-            gameBoard.TrySwapGems(pos1, pos2);
-            await SwapAnimation(gem1, gem2, ct);
-            return false;
-        }
-
-        (gems[pos1.x, pos1.y], gems[pos2.x, pos2.y]) = (gems[pos2.x, pos2.y], gems[pos1.x, pos1.y]);
-
-        return true;
     }
 
     public async Task SwapAnimation(Transform gem1, Transform gem2, CancellationToken ct = default) {
@@ -190,21 +187,41 @@ public class SC_GameLogic : MonoBehaviour {
     }
 
     private async Task HandleMatches(CancellationToken ct = default) {
-        while (gameBoard.TryResolve(out var resolvedResult)) {
+        while (gameBoard.TryResolveMatches(out var matches)) {
             if (ct.IsCancellationRequested) {
                 throw new OperationCanceledException();
             }
 
-            await DestroyMatches(resolvedResult.CollectedGems, ct);
+            var abilityTasks = new List<Task>();
 
+            foreach (var collectedGems in matches) {
+                var ability = _gemAbilityProvider.GetGemAbility(collectedGems.gem.Type);
+                if (ability == null) {
+                    continue;
+                }
+
+                abilityTasks.Add(ability.Execute(matches, gameBoard, this, ct));
+            }
+
+            await Task.WhenAll(abilityTasks);
+
+            await DestroyMatches(matches, ct);
+
+            //refil board and check for matches again
+            var refilResult = gameBoard.Refill(matches);
             var completion = new TaskCompletionSource<bool>();
             var sequence = DOTween.Sequence();
-            foreach (var change in resolvedResult.Changes) {
+            foreach (var change in refilResult) {
                 var gem = change.wasCreated
                     ? SpawnGem(change.toPos, change.gem)
                     : gems[change.fromPos.x, change.fromPos.y];
 
                 gems[change.toPos.x, change.toPos.y] = gem;
+
+                //abilities may have already destroyed the gem
+                if (!gem) {
+                    continue;
+                }
 
                 var tween = gem.Transform
                     .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), 0.25f + change.creationTime * .1f)
@@ -233,17 +250,22 @@ public class SC_GameLogic : MonoBehaviour {
         }
     }
 
-    private async Task DestroyMatches(IEnumerable<CollectedGemInfo> collectedGems, CancellationToken ct = default) {
+    public async Task DestroyMatches(IEnumerable<CollectedGemInfo> collectedGems, CancellationToken ct = default) {
         foreach (var collected in collectedGems) {
-            var gem = collected.gem;
             var pos = collected.position;
+            var gemView = GetGemAt(pos);
+
+            if (!gemView) {
+                continue;
+            }
+
+            var destroyEffect = _gemPool.GetDestroyEffect(gemView.Gem);
+            destroyEffect.Transform.position = new Vector3(pos.x, pos.y, 0);
 
             _gemPool.ReleaseGem(gems[pos.x, pos.y]);
-
-            var destroyEffect = _gemPool.GetDestroyEffect(gem);
-            destroyEffect.Transform.position = new Vector3(pos.x, pos.y, 0);
+            gems[pos.x, pos.y] = null;
         }
-        
+
         await Task.Delay(100, ct);
     }
 
