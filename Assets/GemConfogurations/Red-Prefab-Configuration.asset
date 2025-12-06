@@ -12,10 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c30600cdd8a74de5a999ec656868bc40, type: 3}
   m_Name: Red-Prefab-Configuration
   m_EditorClassIdentifier: 
-  <GemType>k__BackingField: 2
-  <GemPrefab>k__BackingField: {fileID: 613778996103721386, guid: 473855e3d0d3c8143836b678c9a1b8b5,
+  <Color>k__BackingField: 2
+  <Type>k__BackingField: 0
+  <GemPrefab>k__BackingField: {fileID: 3944570492325979905, guid: 473855e3d0d3c8143836b678c9a1b8b5,
     type: 3}
-  <DestroyEffectConfiguration>k__BackingField:
-    <DestroyEffect>k__BackingField: {fileID: 5902279534240010874, guid: 072620c89288cc14e9872d103c2b2fbe,
-      type: 3}
-    <DestroyEffectDuration>k__BackingField: 1
+  <DestroyEffect>k__BackingField: {fileID: 3294572800790467767, guid: 072620c89288cc14e9872d103c2b2fbe,
+    type: 3}

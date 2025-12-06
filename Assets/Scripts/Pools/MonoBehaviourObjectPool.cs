@@ -10,7 +10,11 @@ public class MonoBehaviourObjectPool<T> : ObjectPoolBase<T> where T : SpawnableM
         _container = new GameObject($"{prefab.name}-POOL").transform;
     }
 
-    protected override T Create() => Object.Instantiate(_prefab, _container);
+    protected override T Create() {
+        var item =  Object.Instantiate(_prefab, _container);
+        item.gameObject.SetActive(false);
+        return item;
+    }
 
     protected override void OnReturn(T obj) {
         base.OnReturn(obj);

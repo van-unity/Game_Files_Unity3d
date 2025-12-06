@@ -87,6 +87,7 @@ public class SC_GameLogic : MonoBehaviour {
 
     private GemView SpawnGem(Vector2Int pos, Gem gem) {
         var gemView = _gemPool.GetGem(gem);
+        gemView.Bind(gem);
         gemView.Transform.position = new Vector3(pos.x, pos.y, 0);
         gemView.Transform.SetParent(unityObjects["GemsHolder"].transform);
         gemView.name = "Gem - " + pos.x + ", " + pos.y;

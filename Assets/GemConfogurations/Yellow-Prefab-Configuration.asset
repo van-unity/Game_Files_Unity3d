@@ -12,10 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c30600cdd8a74de5a999ec656868bc40, type: 3}
   m_Name: Yellow-Prefab-Configuration
   m_EditorClassIdentifier: 
-  <GemType>k__BackingField: 3
-  <GemPrefab>k__BackingField: {fileID: 5125166474795790717, guid: 91ba2370328500d4db689dad894b1602,
+  <Color>k__BackingField: 3
+  <Type>k__BackingField: 0
+  <GemPrefab>k__BackingField: {fileID: 8726083308225161174, guid: 91ba2370328500d4db689dad894b1602,
     type: 3}
-  <DestroyEffectConfiguration>k__BackingField:
-    <DestroyEffect>k__BackingField: {fileID: 4897855320600288343, guid: 7fcedfb0407bb5d438de37da2d61df30,
-      type: 3}
-    <DestroyEffectDuration>k__BackingField: 1
+  <DestroyEffect>k__BackingField: {fileID: 4587226291061365402, guid: 7fcedfb0407bb5d438de37da2d61df30,
+    type: 3}

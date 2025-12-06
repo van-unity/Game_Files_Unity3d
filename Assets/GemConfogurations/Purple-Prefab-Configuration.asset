@@ -12,10 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c30600cdd8a74de5a999ec656868bc40, type: 3}
   m_Name: Purple-Prefab-Configuration
   m_EditorClassIdentifier: 
-  <GemType>k__BackingField: 4
-  <GemPrefab>k__BackingField: {fileID: 6117402354121330135, guid: 93bd623174244c047af9ce43cc254c32,
+  <Color>k__BackingField: 4
+  <Type>k__BackingField: 0
+  <GemPrefab>k__BackingField: {fileID: 7700056192797776764, guid: 93bd623174244c047af9ce43cc254c32,
     type: 3}
-  <DestroyEffectConfiguration>k__BackingField:
-    <DestroyEffect>k__BackingField: {fileID: 1865769399618337668, guid: 986dd822e2e6d4b45b2a054259f1241b,
-      type: 3}
-    <DestroyEffectDuration>k__BackingField: 1
+  <DestroyEffect>k__BackingField: {fileID: 7328830029635517769, guid: 986dd822e2e6d4b45b2a054259f1241b,
+    type: 3}

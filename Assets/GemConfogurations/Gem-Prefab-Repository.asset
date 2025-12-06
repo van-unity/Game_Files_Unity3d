@@ -15,6 +15,10 @@ MonoBehaviour:
   _gemPrefabs:
   - {fileID: 11400000, guid: 9828250534300486bb48b24de057d0fb, type: 2}
   - {fileID: 11400000, guid: ae32e5f15a2c14eabb37de29aa8eddde, type: 2}
+  - {fileID: 11400000, guid: 3216ca77121f34e2cacdd9d559236dd7, type: 2}
+  - {fileID: 11400000, guid: 5f1d27f222c1b4096a61fdf988e7e3ad, type: 2}
+  - {fileID: 11400000, guid: dc0e193e2c7424fcf9879d1714029930, type: 2}
+  - {fileID: 11400000, guid: fb9ba216548a1418f890b20b0bea6514, type: 2}
   - {fileID: 11400000, guid: 19a8679d6dc294b618d261b73e37d8ed, type: 2}
   - {fileID: 11400000, guid: bb317ab80182a459487d1450bb4ecbd6, type: 2}
   - {fileID: 11400000, guid: 4ad6bf45e30f947318a94f0bcd0d400e, type: 2}
