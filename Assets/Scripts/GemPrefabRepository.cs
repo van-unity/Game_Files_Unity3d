@@ -1,35 +1,19 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Match3/Gem Prefab Repository", fileName = "Gem-Prefab-Repository")]
 public class GemPrefabRepository : ScriptableObject {
     [SerializeField] private GemPrefabConfiguration[] _gemPrefabs;
 
-    private Dictionary<GemType, GemPrefabConfiguration> _prefabsLookup;
+    public IEnumerable<GemPrefabConfiguration> IteratePrefabs() => _gemPrefabs;
 
-    private void OnEnable() {
-        if (_gemPrefabs == null) {
-            return;
+    public GemPrefabConfiguration GetConfig(GemColor color, GemType type) {
+        foreach (var config in _gemPrefabs) {
+            if (config.Color == color && config.Type == type) {
+                return config;
+            }
         }
 
-        _prefabsLookup = _gemPrefabs.ToDictionary(gemPrefab => gemPrefab.GemType, gemPrefab => gemPrefab);
-    }
-
-    public GameObject GetGemPrefab(GemType gemType) {
-        if (!_prefabsLookup.TryGetValue(gemType, out var prefabConfig)) {
-            return null;
-        }
-
-        return prefabConfig.GemPrefab;
-    }
-
-    public DestroyEffectConfiguration GetDestroyEffect(GemType gemType) {
-        if (!_prefabsLookup.TryGetValue(gemType, out var prefabConfig)) {
-            return null;
-        }
-
-        return prefabConfig.DestroyEffectConfiguration;
+        return null;
     }
 }

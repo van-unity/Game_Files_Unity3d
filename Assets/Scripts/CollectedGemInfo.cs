@@ -2,10 +2,10 @@ using UnityEngine;
 
 public readonly struct CollectedGemInfo {
     public readonly Vector2Int position;
-    public readonly GemType gemType;
+    public readonly Gem gem;
 
-    public CollectedGemInfo(Vector2Int position, GemType gemType) {
+    public CollectedGemInfo(Vector2Int position, Gem gem) {
         this.position = position;
-        this.gemType = gemType;
+        this.gem = gem;
     }
 }

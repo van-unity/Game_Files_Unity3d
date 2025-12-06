@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public interface IGemGenerator {
-    GemType Execute(Vector2Int pos, GameBoard board);
+    Gem Execute(Vector2Int pos, GameBoard board);
 }
 
 public class GemGenerator : IGemGenerator {
@@ -13,18 +13,18 @@ public class GemGenerator : IGemGenerator {
         _matchCheckStrategy = matchCheckStrategy;
     }
 
-    public GemType Execute(Vector2Int pos, GameBoard board) {
+    public Gem Execute(Vector2Int pos, GameBoard board) {
         if (Random.Range(0, 100f) < _gameVariables.bombChance)
-            return GemType.bomb;
+            return new Gem(GemColor.Blue, GemType.Bomb, 10);
 
-        var gemType = GemTypeExtensions.AllGemTypes[Random.Range(0, GemTypeExtensions.GemTypeCount)];
+        var gemType = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
         var iterations = 0;
 
         while (_matchCheckStrategy.MatchesAt(board, pos, gemType) && iterations < 100) {
-            gemType = GemTypeExtensions.AllGemTypes[Random.Range(0, GemTypeExtensions.GemTypeCount)];
+            gemType = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
             iterations++;
         }
         
-        return gemType;
+        return new Gem(gemType, GemType.Regular, 10);
     }
 }
