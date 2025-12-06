@@ -19,6 +19,7 @@ public class SC_GameLogic : MonoBehaviour {
     private CancellationTokenSource _cts = new();
     private GemPool _gemPool;
     private bool _canMove;
+    private IMatchCheckStrategy _matchCheckStrategy;
 
     #region MonoBehaviour
 
@@ -56,9 +57,15 @@ public class SC_GameLogic : MonoBehaviour {
         foreach (GameObject g in _obj)
             unityObjects.Add(g.name, g);
 
-        gameBoard = new GameBoard(SC_GameVariables.Instance.colsSize, SC_GameVariables.Instance.rowsSize,
-            new GemGenerator(SC_GameVariables.Instance));
-        gameBoard.Initialize();
+        _matchCheckStrategy = new MatchCheckStrategy();
+
+        gameBoard = new GameBoard(
+            SC_GameVariables.Instance.colsSize,
+            SC_GameVariables.Instance.rowsSize,
+            new GemGenerator(SC_GameVariables.Instance, _matchCheckStrategy),
+            _matchCheckStrategy
+        );
+
         Setup();
     }
 
@@ -140,8 +147,8 @@ public class SC_GameLogic : MonoBehaviour {
         var gem1 = gems[pos1.x, pos1.y].transform;
         var gem2 = gems[pos2.x, pos2.y].transform;
 
-        var isMatch = gameBoard.MatchesAt(pos1, gameBoard.GetAt(pos1)) ||
-                      gameBoard.MatchesAt(pos2, gameBoard.GetAt(pos2));
+        var isMatch = _matchCheckStrategy.MatchesAt(gameBoard, pos1, gameBoard.GetAt(pos1)) ||
+                      _matchCheckStrategy.MatchesAt(gameBoard, pos2, gameBoard.GetAt(pos2));
 
         await SwapAnimation(gem1, gem2, ct);
 
@@ -187,26 +194,7 @@ public class SC_GameLogic : MonoBehaviour {
                 throw new OperationCanceledException();
             }
 
-            var destroySequence = DOTween.Sequence();
-
-            foreach (var collected in resolvedResult.CollectedGems) {
-                var gemType = collected.gemType;
-                var pos = collected.position;
-
-                _gemPool.ReleaseGem(gemType, gems[pos.x, pos.y]);
-
-                var destroyEffect = _gemPool.GetDestroyEffect(gemType);
-                var duration = _gemPrefabRepository.GetDestroyEffect(gemType).DestroyEffectDuration;
-
-                destroyEffect.transform.position = new Vector3(pos.x, pos.y, 0);
-                destroyEffect.SetActive(true);
-
-                destroySequence.Join(
-                    DOTween.Sequence()
-                        .AppendInterval(duration)
-                        .AppendCallback(() => { _gemPool.ReleaseDestroyEffect(gemType, destroyEffect); })
-                );
-            }
+            await DestroyMatches(resolvedResult.CollectedGems, ct);
 
             var completion = new TaskCompletionSource<bool>();
             var sequence = DOTween.Sequence();
@@ -216,7 +204,7 @@ public class SC_GameLogic : MonoBehaviour {
                     : gems[change.fromPos.x, change.fromPos.y];
 
                 gems[change.toPos.x, change.toPos.y] = gem;
-                var distance = Mathf.Abs(change.fromPos.y - change.toPos.y);
+
                 var tween = gem.transform
                     .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), 0.25f + change.creationTime * .1f)
                     .From(new Vector3(change.fromPos.x, change.fromPos.y, 0))
@@ -224,8 +212,7 @@ public class SC_GameLogic : MonoBehaviour {
 
                 if (change.wasCreated) {
                     gem.gameObject.SetActive(false);
-                    tween
-                        .OnStart(() => gem.gameObject.SetActive(true));
+                    tween.OnStart(() => gem.gameObject.SetActive(true));
                 }
 
                 sequence.Join(tween);
@@ -242,6 +229,29 @@ public class SC_GameLogic : MonoBehaviour {
             await completion.Task;
 
             await Task.Delay(100, ct);
+        }
+    }
+
+    private async Task DestroyMatches(IEnumerable<CollectedGemInfo> collectedGems, CancellationToken ct = default) {
+        var destroySequence = DOTween.Sequence();
+
+        foreach (var collected in collectedGems) {
+            var gemType = collected.gemType;
+            var pos = collected.position;
+
+            _gemPool.ReleaseGem(gemType, gems[pos.x, pos.y]);
+
+            var destroyEffect = _gemPool.GetDestroyEffect(gemType);
+            var duration = _gemPrefabRepository.GetDestroyEffect(gemType).DestroyEffectDuration;
+
+            destroyEffect.transform.position = new Vector3(pos.x, pos.y, 0);
+            destroyEffect.SetActive(true);
+
+            destroySequence.Join(
+                DOTween.Sequence()
+                    .AppendInterval(duration)
+                    .AppendCallback(() => { _gemPool.ReleaseDestroyEffect(gemType, destroyEffect); })
+            );
         }
     }
 

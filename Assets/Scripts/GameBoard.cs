@@ -2,10 +2,99 @@
 using System.Linq;
 using UnityEngine;
 
+public interface IMatchCheckStrategy {
+    bool MatchesAt(GameBoard board, Vector2Int pos, GemType gemType);
+    IEnumerable<Vector2Int> GetMatches(GameBoard board);
+}
+
+public class MatchCheckStrategy : IMatchCheckStrategy{
+    public bool MatchesAt(GameBoard board, Vector2Int pos, GemType gemType) {
+        if (!board.IsValidPos(pos)) {
+            return false;
+        }
+
+        // Check horizontal matches (3 possible formations)
+
+        // 1. Formation: [Type] [Type] [POS] (Checks two left neighbors)
+        if (pos.x >= 2 && board.GetAt(pos.x - 2, pos.y) == gemType && board.GetAt(pos.x - 1, pos.y) == gemType) {
+            return true;
+        }
+
+        // 2. Formation: [Type] [POS] [Type] (Checks one left, one right neighbor)
+        if (pos.x >= 1 && pos.x <= board.Width - 2 && board.GetAt(pos.x - 1, pos.y) == gemType &&
+            board.GetAt(pos.x + 1, pos.y) == gemType) {
+            return true;
+        }
+
+        // 3. Formation: [POS] [Type] [Type] (Checks two right neighbors)
+        // This formation is redundant for initialization but necessary for gameplay.
+        if (pos.x <= board.Width - 3 && board.GetAt(pos.x + 1, pos.y) == gemType && board.GetAt(pos.x + 2, pos.y) == gemType) {
+            return true;
+        }
+
+        // Check vertical matches (3 possible formations)
+
+        // 4. Formation: [Type] [Type] [POS] (Checks two down neighbors)
+        if (pos.y >= 2 && board.GetAt(pos.x, pos.y - 2) == gemType && board.GetAt(pos.x, pos.y - 1) == gemType) {
+            return true;
+        }
+
+        // 5. Formation: [Type] [POS] [Type] (Checks one down, one up neighbor)
+        if (pos.y >= 1 && pos.y <= board.Height - 2 && board.GetAt(pos.x, pos.y - 1) == gemType &&
+            board.GetAt(pos.x, pos.y + 1) == gemType) {
+            return true;
+        }
+
+        // 6. Formation: [POS] [Type] [Type] (Checks two up neighbors)
+        if (pos.y <= board.Height - 3 && board.GetAt(pos.x, pos.y + 1) == gemType && board.GetAt(pos.x, pos.y + 2) == gemType) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public IEnumerable<Vector2Int> GetMatches(GameBoard  board) {
+        var length = board.Width;
+        var height = board.Height;
+        
+        var matchedPositions = new HashSet<Vector2Int>();
+
+        for (int x = 0; x < length; x++) {
+            for (int y = 0; y < height; y++) {
+                var currentType = board.GetAt(x, y);
+                if (currentType == GemType.none) {
+                    continue;
+                }
+
+                //horizontal 
+                if (x < length - 2) {
+                    if (board.GetAt(x + 1, y) == currentType && board.GetAt(x + 2, y) == currentType) {
+                        matchedPositions.Add(new Vector2Int(x, y));
+                        matchedPositions.Add(new Vector2Int(x + 1, y));
+                        matchedPositions.Add(new Vector2Int(x + 2, y));
+                    }
+                }
+
+                // vertical check 
+                if (y < height - 2) {
+                    if (board.GetAt(x, y + 1) == currentType && board.GetAt(x, y + 2) == currentType) {
+                        matchedPositions.Add(new Vector2Int(x, y));
+                        matchedPositions.Add(new Vector2Int(x, y + 1));
+                        matchedPositions.Add(new Vector2Int(x, y + 2));
+                    }
+                }
+            }
+        }
+
+        return matchedPositions;
+    }
+}
+
 public class GameBoard {
     #region Variables
 
     private readonly IGemGenerator _gemGenerator;
+    private readonly IMatchCheckStrategy  _matchCheckStrategy;
     private readonly GemType[,] _state;
 
     public int Height { get; }
@@ -22,11 +111,13 @@ public class GameBoard {
 
     #endregion
 
-    public GameBoard(int width, int height, IGemGenerator gemGenerator) {
+    public GameBoard(int width, int height, IGemGenerator gemGenerator, IMatchCheckStrategy matchCheckStrategy) {
         Width = width;
         Height = height;
         _gemGenerator = gemGenerator;
+        _matchCheckStrategy = matchCheckStrategy;
         _state = new GemType[width, height];
+        Initialize();
     }
 
     public void Initialize() {
@@ -35,51 +126,6 @@ public class GameBoard {
                 _state[x, y] = _gemGenerator.Execute(new Vector2Int(x, y), this);
             }
         }
-    }
-
-    public bool MatchesAt(Vector2Int pos, GemType gemType) {
-        if (!IsValidPos(pos)) {
-            return false;
-        }
-
-        // Check horizontal matches (3 possible formations)
-
-        // 1. Formation: [Type] [Type] [POS] (Checks two left neighbors)
-        if (pos.x >= 2 && _state[pos.x - 2, pos.y] == gemType && _state[pos.x - 1, pos.y] == gemType) {
-            return true;
-        }
-
-        // 2. Formation: [Type] [POS] [Type] (Checks one left, one right neighbor)
-        if (pos.x >= 1 && pos.x <= Width - 2 && _state[pos.x - 1, pos.y] == gemType &&
-            _state[pos.x + 1, pos.y] == gemType) {
-            return true;
-        }
-
-        // 3. Formation: [POS] [Type] [Type] (Checks two right neighbors)
-        // This formation is redundant for initialization but necessary for gameplay.
-        if (pos.x <= Width - 3 && _state[pos.x + 1, pos.y] == gemType && _state[pos.x + 2, pos.y] == gemType) {
-            return true;
-        }
-
-        // Check vertical matches (3 possible formations)
-
-        // 4. Formation: [Type] [Type] [POS] (Checks two down neighbors)
-        if (pos.y >= 2 && _state[pos.x, pos.y - 2] == gemType && _state[pos.x, pos.y - 1] == gemType) {
-            return true;
-        }
-
-        // 5. Formation: [Type] [POS] [Type] (Checks one down, one up neighbor)
-        if (pos.y >= 1 && pos.y <= Height - 2 && _state[pos.x, pos.y - 1] == gemType &&
-            _state[pos.x, pos.y + 1] == gemType) {
-            return true;
-        }
-
-        // 6. Formation: [POS] [Type] [Type] (Checks two up neighbors)
-        if (pos.y <= Height - 3 && _state[pos.x, pos.y + 1] == gemType && _state[pos.x, pos.y + 2] == gemType) {
-            return true;
-        }
-
-        return false;
     }
 
     // public void SetGem(int _X, int _Y, SC_Gem _Gem) {
@@ -191,7 +237,7 @@ public class GameBoard {
     }
 
     public bool TryResolve(out ResolveResult result) {
-        var matches = GetMatches(_state).ToList();
+        var matches = _matchCheckStrategy.GetMatches(this).ToList();
         if (matches.Count == 0) {
             result = null;
             return false;
@@ -253,44 +299,6 @@ public class GameBoard {
                 yield return new ChangeInfo(newGemType, true, resolveStep++, new Vector2Int(x, Height), pos);
             }
         }
-    }
-
-    public IEnumerable<Vector2Int> GetMatches(GemType[,] board) {
-        var matchedPositions = new HashSet<Vector2Int>();
-
-        for (int x = 0; x < Width; x++) {
-            for (int y = 0; y < Height; y++) {
-                if (board[x, y] == GemType.none) {
-                    continue;
-                }
-
-                var currentType = board[x, y];
-
-                if (currentType == GemType.none) {
-                    continue;
-                }
-
-                //horizontal 
-                if (x < Width - 2) {
-                    if (board[x + 1, y] == currentType && board[x + 2, y] == currentType) {
-                        matchedPositions.Add(new Vector2Int(x, y));
-                        matchedPositions.Add(new Vector2Int(x + 1, y));
-                        matchedPositions.Add(new Vector2Int(x + 2, y));
-                    }
-                }
-
-                // vertical check 
-                if (y < Height - 2) {
-                    if (board[x, y + 1] == currentType && board[x, y + 2] == currentType) {
-                        matchedPositions.Add(new Vector2Int(x, y));
-                        matchedPositions.Add(new Vector2Int(x, y + 1));
-                        matchedPositions.Add(new Vector2Int(x, y + 2));
-                    }
-                }
-            }
-        }
-
-        return matchedPositions;
     }
 
     public bool TryGetGem(Vector2Int pos, out GemType gem) {

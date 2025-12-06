@@ -6,9 +6,11 @@ public interface IGemGenerator {
 
 public class GemGenerator : IGemGenerator {
     private readonly SC_GameVariables _gameVariables;
+    private readonly IMatchCheckStrategy _matchCheckStrategy;
 
-    public GemGenerator(SC_GameVariables gameVariables) {
+    public GemGenerator(SC_GameVariables gameVariables, IMatchCheckStrategy matchCheckStrategy) {
         _gameVariables = gameVariables;
+        _matchCheckStrategy = matchCheckStrategy;
     }
 
     public GemType Execute(Vector2Int pos, GameBoard board) {
@@ -18,13 +20,9 @@ public class GemGenerator : IGemGenerator {
         var gemType = GemTypeExtensions.AllGemTypes[Random.Range(0, GemTypeExtensions.GemTypeCount)];
         var iterations = 0;
 
-        while (board.MatchesAt(pos, gemType) && iterations < 100) {
+        while (_matchCheckStrategy.MatchesAt(board, pos, gemType) && iterations < 100) {
             gemType = GemTypeExtensions.AllGemTypes[Random.Range(0, GemTypeExtensions.GemTypeCount)];
             iterations++;
-        }
-
-        if (iterations > 100) {
-            Debug.LogError($"Had to generate: {gemType}");
         }
         
         return gemType;
