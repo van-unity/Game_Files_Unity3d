@@ -22,7 +22,7 @@ public interface IGemAbility {
 }
 
 public class BombAbility : IGemAbility {
-    private const int DESTRUCTION_DELAY_MS = 250; // Reduced for snappier feel
+    private const int DESTRUCTION_DELAY_MS = 250;
 
     private readonly Vector2Int[] _explosionOffsets = {
         // 3x3 square
@@ -36,48 +36,39 @@ public class BombAbility : IGemAbility {
         CancellationToken ct = default) {
         var destroyPositions = new List<Vector2Int>();
         var bombPositions = new HashSet<Vector2Int>(); // Use HashSet for fast lookup
-
-        // 1. Identify Bombs
+        
         foreach (var info in collectedGems) {
             if (info.gem != null && info.gem.Type == GemType.Bomb) {
                 bombPositions.Add(info.position);
             }
         }
 
-        // 2. Identify Valid Neighbors
+        //identify valid neighbors
         foreach (var bombPos in bombPositions) {
             foreach (var offset in _explosionOffsets) {
                 var targetPos = bombPos + offset;
-
-                // Skip if it's another bomb in the current match set (handled later)
+                
                 if (bombPositions.Contains(targetPos)) continue;
-
-                // CRITICAL FIX: Check if the gem exists before adding it.
-                // If GetAt returns null, it was already cleared by the match logic.
+                
                 var targetGem = board.GetAt(targetPos);
                 if (board.IsValidPos(targetPos) && targetGem != null) {
                     destroyPositions.Add(targetPos);
                 }
             }
         }
-
-        // 3. Collect Neighbors
+        
         var neighborInfos = destroyPositions
             .Distinct()
             .Select(p => new CollectedGemInfo(p, board.GetAt(p)))
             .ToList();
-
-        // Clear neighbors from board immediately
+        
         foreach (var info in neighborInfos) {
             board.SetAt(info.position, null);
         }
-
-        // 4. Visuals: Destroy Neighbors
+        
         await boardView.DestroyMatches(neighborInfos.Select(n => n.position), ct);
         await Task.Delay(DESTRUCTION_DELAY_MS, ct);
-
-        // 5. Visuals: Destroy Bombs (They were already cleared from model in TryResolveMatches)
-        // We reconstruct the info to ensure we pass valid data to DestroyMatches
+        
         var bombInfos = collectedGems
             .Where(c => c.gem.Type == GemType.Bomb)
             .ToList();

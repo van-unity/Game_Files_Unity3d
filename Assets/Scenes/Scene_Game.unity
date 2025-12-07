@@ -152,7 +152,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 376092240}
-  - {fileID: 1445334646}
   - {fileID: 259844899}
   - {fileID: 1567705085}
   m_Father: {fileID: 0}
@@ -269,6 +268,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db185b18195d3814aab9ba4ac5f95047, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _boardWidth: 7
+  _boardHeight: 7
   _inputManager: {fileID: 0}
   _gemRepository: {fileID: 11400000, guid: d36a38d1018d742d292a6caacb066a16, type: 2}
   _boardViewSettings: {fileID: 11400000, guid: e1a450716f9dd40788413109e74a6fe3, type: 2}
@@ -815,60 +816,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &1445334645
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1445334646}
-  - component: {fileID: 1445334647}
-  m_Layer: 0
-  m_Name: SC_GameVariables
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1445334646
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1445334645}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 3199143}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1445334647
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1445334645}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b3b891bcdf21df4ab82ea34c3afc99e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bonusAmount: 0.5
-  bombChance: 3
-  dropHeight: 1
-  gemSpeed: 5
-  scoreSpeed: 5
-  minSwipeDistance: 0.5
-  gemSwapDuration: 0.25
-  gemSwapEase: 6
-  rowsSize: 7
-  colsSize: 7
 --- !u!1 &1450061018
 GameObject:
   m_ObjectHideFlags: 0
@@ -1030,7 +977,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _camera: {fileID: 519420031}
-  _gameVariables: {fileID: 0}
+  _minSwipeDistance: 0.5
 --- !u!1 &1740955908
 GameObject:
   m_ObjectHideFlags: 0

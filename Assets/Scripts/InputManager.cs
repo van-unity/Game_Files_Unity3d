@@ -23,7 +23,7 @@ public readonly struct SwipeArgs {
 
 public class InputManager : MonoBehaviour {
     [SerializeField] private Camera _camera;
-    [SerializeField] private SC_GameVariables _gameVariables;
+    [SerializeField] private float _minSwipeDistance = 0.5f;
 
     public event Action<SwipeArgs> Swiped;
 
@@ -37,14 +37,6 @@ public class InputManager : MonoBehaviour {
 
         if (_camera == null) {
             throw new NullReferenceException($"[{nameof(InputManager)}]Camera missing");
-        }
-
-        if (_gameVariables == null) {
-            _gameVariables = FindObjectOfType<SC_GameVariables>();
-        }
-
-        if (_gameVariables == null) {
-            throw new NullReferenceException($"[{nameof(InputManager)}]GameVariables missing");
         }
     }
 
@@ -64,7 +56,7 @@ public class InputManager : MonoBehaviour {
     private void DetectAndFireSwipe(Vector2 startPos, Vector2 endPos) {
         var delta = endPos - startPos;
         //could use sqr magnitude but this will not happen each frame so performance impact is negligible
-        if (delta.magnitude < _gameVariables.minSwipeDistance) {
+        if (delta.magnitude < _minSwipeDistance) {
             return;
         }
 

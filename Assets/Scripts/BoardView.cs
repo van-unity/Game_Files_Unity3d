@@ -144,7 +144,8 @@ public class BoardView {
             SetGemAt(change.toPos, gemView);
             
             var tween = gemView.Transform
-                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), _settings.GemFallDuration + change.creationTime * _settings.GemFallDelay)
+                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), _settings.GemFallDuration)
+                .SetDelay(change.creationTime * _settings.GemFallDelay)
                 .From(new Vector3(change.fromPos.x, change.fromPos.y, 0))
                 .SetEase(Ease.OutSine);
 

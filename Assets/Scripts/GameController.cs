@@ -7,6 +7,8 @@ using TMPro;
 using UnityEngine;
 
 public class GameController : MonoBehaviour {
+    [SerializeField] private int _boardWidth = 7;
+    [SerializeField] private int _boardHeight = 7;
     [SerializeField] private InputManager _inputManager;
     [SerializeField] private GemRepository _gemRepository;
     [SerializeField] private BoardViewSettings _boardViewSettings;
@@ -60,8 +62,8 @@ public class GameController : MonoBehaviour {
         var boardRefillStrategy = new BoardRefillStrategy(_matchCheckStrategy, _gemRepository);
         
         _board = new Board(
-            SC_GameVariables.Instance.colsSize,
-            SC_GameVariables.Instance.rowsSize,
+            _boardWidth,
+            _boardHeight,
             boardInitializeStrategy,
             boardRefillStrategy,
             _matchCheckStrategy

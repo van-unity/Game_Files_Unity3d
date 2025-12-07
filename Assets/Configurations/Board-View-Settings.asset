@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BoardViewSettings
   <GemFallDuration>k__BackingField: 0.25
   <GemSwapDuration>k__BackingField: 0.25
-  <GemFallDelay>k__BackingField: 0.1
+  <GemFallDelay>k__BackingField: 0.05
   <GemFallEase>k__BackingField: 3
-  <GemSwapEase>k__BackingField: 21
+  <GemSwapEase>k__BackingField: 6
   <DestroyDelayMS>k__BackingField: 100
   <UpdateDelayMS>k__BackingField: 100
