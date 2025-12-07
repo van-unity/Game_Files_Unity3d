@@ -15,7 +15,7 @@ public class GameController : IDisposable{
     private readonly GameplayScreen _gameplayScreen;
     
     private bool _canMove;
-    private int score = 0;
+    private int _score;
 
     public GameController(Board board, BoardView boardView, GemAbilityProvider abilityProvider, InputManager inputManager, GameplayScreen gameplayScreen) {
         _cts = new CancellationTokenSource();
@@ -37,8 +37,8 @@ public class GameController : IDisposable{
 
     public void StartGame() {
         _canMove = true;
-        score = 0;
-        _gameplayScreen.UpdateScore(score);
+        _score = 0;
+        _gameplayScreen.UpdateScore(_score);
     }
 
     private async void OnSwiped(SwipeArgs args) {
@@ -112,8 +112,8 @@ public class GameController : IDisposable{
 
             await Task.WhenAll(abilityTasks);
 
-            score  += matches.Sum(m => m.gem.ScoreValue);
-            _gameplayScreen.UpdateScore(score);
+            _score  += matches.Sum(m => m.gem.ScoreValue);
+            _gameplayScreen.UpdateScore(_score);
             await _boardView.DestroyMatches(matches.Select(m => m.position), ct);
 
             //refil board and check for matches again

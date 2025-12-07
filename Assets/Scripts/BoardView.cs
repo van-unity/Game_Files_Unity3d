@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DG.Tweening;
+using Pools;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Board-View-Settings", menuName = "Match3/Board View Settings")]
