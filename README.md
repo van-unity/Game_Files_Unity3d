@@ -36,7 +36,7 @@ The Strategy Pattern plays a key role in achieving that.
 
 ## Dependency Resolution
 
-Dependencies are resolved through the `GameController`, acting as a lightweight initializer.
+Dependencies are resolved through the `GameInitializer`, acting as a lightweight initializer.
 
 Key choices:
 
