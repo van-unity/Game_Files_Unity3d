@@ -2,9 +2,9 @@ using System;
 
 [Serializable]
 public class Gem : IEquatable<Gem> {
-    public GemColor Color { get; }
-    public GemType Type { get; }
-    public int ScoreValue { get; }
+    public GemColor Color { get; set; }
+    public GemType Type { get; set; }
+    public int ScoreValue { get; set; }
 
     public Gem(GemColor color, GemType type, int scoreValue) {
         Color = color;

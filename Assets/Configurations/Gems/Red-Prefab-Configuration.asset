@@ -10,11 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c30600cdd8a74de5a999ec656868bc40, type: 3}
-  m_Name: Bomb-Green-Prefab-Configuration
+  m_Name: Red-Prefab-Configuration
   m_EditorClassIdentifier: 
-  <Color>k__BackingField: 1
-  <Type>k__BackingField: 1
-  <GemPrefab>k__BackingField: {fileID: 3383793497947205141, guid: aa0291e650b382941875040db9e8a232,
+  <Color>k__BackingField: 2
+  <Type>k__BackingField: 0
+  <GemPrefab>k__BackingField: {fileID: 3944570492325979905, guid: 473855e3d0d3c8143836b678c9a1b8b5,
     type: 3}
-  <DestroyEffect>k__BackingField: {fileID: 11190433630245393, guid: 05c754e3d4f9fd349ac1def58d17670f,
+  <DestroyEffect>k__BackingField: {fileID: 3294572800790467767, guid: 072620c89288cc14e9872d103c2b2fbe,
     type: 3}
+  <ScoreValue>k__BackingField: 10

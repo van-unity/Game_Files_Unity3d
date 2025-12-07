@@ -6,4 +6,5 @@ public class GemPrefabConfiguration : ScriptableObject {
     [field: SerializeField] public GemType Type { get; private set; }
     [field: SerializeField] public GemView GemPrefab { get; private set; }
     [field: SerializeField] public GemDestroyEffect DestroyEffect { get; private set; }
+    [field: SerializeField] public int ScoreValue { get; private set; }
 }

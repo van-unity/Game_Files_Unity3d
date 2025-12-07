@@ -3,13 +3,13 @@ using UnityEngine;
 
 //created the MatchesAtInitialization to not make unnecessary checks on initialization
 public interface IMatchCheckStrategy {
-    bool MatchesAtInitialization(GameBoard board, Vector2Int pos, GemColor gemColor);
-    bool MatchesAtGameplay(GameBoard board, Vector2Int pos);
-    IEnumerable<Vector2Int> GetMatches(GameBoard board);
+    bool MatchesAtInitialization(Board board, Vector2Int pos, GemColor gemColor);
+    bool MatchesAtGameplay(Board board, Vector2Int pos);
+    IEnumerable<Vector2Int> GetMatches(Board board);
 }
 
 public class MatchCheckStrategy : IMatchCheckStrategy {
-    public bool MatchesAtInitialization(GameBoard board, Vector2Int pos, GemColor gemColor) {
+    public bool MatchesAtInitialization(Board board, Vector2Int pos, GemColor gemColor) {
         if (pos.x >= 2) {
             var left1 = board.GetAt(pos.x - 1, pos.y);
             var left2 = board.GetAt(pos.x - 2, pos.y);
@@ -37,13 +37,13 @@ public class MatchCheckStrategy : IMatchCheckStrategy {
         return false;
     }
 
-    public bool MatchesAtGameplay(GameBoard board, Vector2Int pos) {
+    public bool MatchesAtGameplay(Board board, Vector2Int pos) {
         if (!board.IsValidPos(pos)) {
             return false;
         }
-
-        var targetGem = board.GetAt(pos);
-
+        
+        var targetGem = board.GetAt(pos.x, pos.y);
+        
         // Check horizontal matches (3 possible formations)
 
         // 1. Formation: [Type] [Type] [POS] (Checks two left neighbors)
@@ -108,7 +108,7 @@ public class MatchCheckStrategy : IMatchCheckStrategy {
         return gem1.Type == gem2.Type;
     }
 
-    public IEnumerable<Vector2Int> GetMatches(GameBoard board) {
+    public IEnumerable<Vector2Int> GetMatches(Board board) {
         var length = board.Width;
         var height = board.Height;
 

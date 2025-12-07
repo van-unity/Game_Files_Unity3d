@@ -3,19 +3,21 @@ using System.Linq;
 using UnityEngine;
 
 public interface IBoardRefillStrategy {
-    List<ChangeInfo> Execute(GameBoard board, IEnumerable<CollectedGemInfo> collectedGems = null);
+    List<ChangeInfo> Execute(Board board, IEnumerable<CollectedGemInfo> collectedGems = null);
 }
 
 public class BoardRefillStrategy : IBoardRefillStrategy {
     private const int MAX_ITERATIONS = 100;
 
     private readonly IMatchCheckStrategy _matchCheckStrategy;
+    private readonly GemRepository _gemRepository;
 
-    public BoardRefillStrategy(IMatchCheckStrategy matchCheckStrategy) {
+    public BoardRefillStrategy(IMatchCheckStrategy matchCheckStrategy, GemRepository gemRepository) {
         _matchCheckStrategy = matchCheckStrategy;
+        _gemRepository = gemRepository;
     }
 
-    public List<ChangeInfo> Execute(GameBoard board, IEnumerable<CollectedGemInfo> collectedGems = null) {
+    public List<ChangeInfo> Execute(Board board, IEnumerable<CollectedGemInfo> collectedGems = null) {
         var width = board.Width;
         var height = board.Height;
         var changes = new Dictionary<Vector2Int, ChangeInfo>();
@@ -40,8 +42,8 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                 var pos = collectedGem.Value[0].position.x == collectedGem.Value[1].position.x
                     ? collectedGem.Value.OrderBy(x => x.position.x).First().position
                     : collectedGem.Value.OrderBy(x => x.position.y).First().position;
-
-                var bombGem = new Gem(collectedGem.Key, GemType.Bomb, 10);
+                var config = _gemRepository.GetConfig(collectedGem.Key, GemType.Bomb);
+                var bombGem = new Gem(collectedGem.Key, GemType.Bomb, config.ScoreValue);
                 board.SetAt(pos, bombGem);
                 var changeInfo = new ChangeInfo(bombGem, true, 0, new Vector2Int(pos.x, height), pos);
                 changes.Add(pos, changeInfo);
@@ -58,16 +60,20 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                 }
 
                 var pos = new Vector2Int(x, y);
-                var gemType = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
+                var gemConfig = _gemRepository.GetRandomRegularGem();
+                var newGem = new Gem(gemConfig.Color, GemType.Regular, gemConfig.ScoreValue);
+                board.SetAt(x, y, newGem);
                 var iterations = 0;
 
                 while (_matchCheckStrategy.MatchesAtGameplay(board, pos) && iterations < MAX_ITERATIONS) {
-                    gemType = GemTypeExtensions.GemColors[Random.Range(0, GemTypeExtensions.GemColors.Count)];
+                    gemConfig = _gemRepository.GetRandomRegularGem();
+                    newGem.Color = gemConfig.Color;
+                    newGem.ScoreValue = gemConfig.ScoreValue;
+                    board.SetAt(x, y, newGem);
                     iterations++;
                 }
 
-                var newGem = new Gem(gemType, GemType.Regular, 10);
-                board.SetAt(x, y, newGem);
+                
                 var changeInfo = new ChangeInfo(newGem, true, resolveStep++, new Vector2Int(x, height), pos);
                 changes.Add(pos, changeInfo);
             }
@@ -76,7 +82,7 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
         return changes.Values.ToList();
     }
 
-    private void MoveGemsDown(GameBoard board, Dictionary<Vector2Int, ChangeInfo> changes) {
+    private void MoveGemsDown(Board board, Dictionary<Vector2Int, ChangeInfo> changes) {
         var width = board.Width;
         var height = board.Height;
 

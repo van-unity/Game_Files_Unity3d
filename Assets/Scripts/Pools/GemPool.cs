@@ -10,10 +10,10 @@ public class GemPool {
     private readonly Dictionary<GemColor, Dictionary<GemType, MonoBehaviourObjectPool<GemDestroyEffect>>>
         _destroyEffectPools;
 
-    private readonly GemPrefabRepository _gemPrefabRepository;
+    private readonly GemRepository gemRepository;
 
-    public GemPool(GemPrefabRepository gemPrefabRepository) {
-        _gemPrefabRepository = gemPrefabRepository;
+    public GemPool(GemRepository gemRepository) {
+        this.gemRepository = gemRepository;
         //no pool for GemType.None 
         _gemPools = new Dictionary<GemColor, Dictionary<GemType, MonoBehaviourObjectPool<GemView>>>();
         _destroyEffectPools =
@@ -58,7 +58,7 @@ public class GemPool {
     }
 
     private void Initialize() {
-        foreach (var gemPrefabConfig in _gemPrefabRepository.IteratePrefabs()) {
+        foreach (var gemPrefabConfig in gemRepository.AllGems()) {
             var gemPool = new MonoBehaviourObjectPool<GemView>(gemPrefabConfig.GemPrefab, POOL_SIZE, POOL_GROW_AMOUNT);
             gemPool.WarmUp();
             if (_gemPools.TryGetValue(gemPrefabConfig.Color, out var poolByType)) {

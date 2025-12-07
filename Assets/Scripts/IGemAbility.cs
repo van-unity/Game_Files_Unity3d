@@ -17,67 +17,71 @@ public class GemAbilityProvider {
 }
 
 public interface IGemAbility {
-    Task Execute(List<CollectedGemInfo> collectedGems, GameBoard board, SC_GameLogic gameLogic,
+    Task Execute(List<CollectedGemInfo> collectedGems, Board board, BoardView boardView,
         CancellationToken ct = default);
 }
 
 public class BombAbility : IGemAbility {
-    private const int DESTRUCTION_DELAY_MS = 500;
+    private const int DESTRUCTION_DELAY_MS = 250; // Reduced for snappier feel
 
     private readonly Vector2Int[] _explosionOffsets = {
-        // 3x3 square (all neighbors)
+        // 3x3 square
         new(1, 0), new(-1, 0), new(0, 1), new(0, -1),
         new(1, 1), new(-1, 1), new(1, -1), new(-1, -1),
-
-        // Outer orthogonal tiles (the "arms" of the cross)
+        // Arms
         new(2, 0), new(-2, 0), new(0, 2), new(0, -2)
     };
 
-    public async Task Execute(List<CollectedGemInfo> collectedGems, GameBoard board, SC_GameLogic gameLogic,
+    public async Task Execute(List<CollectedGemInfo> collectedGems, Board board, BoardView boardView,
         CancellationToken ct = default) {
         var destroyPositions = new List<Vector2Int>();
-        var bombPositions = new List<Vector2Int>();
+        var bombPositions = new HashSet<Vector2Int>(); // Use HashSet for fast lookup
 
-        foreach (var collectedGemInfo in collectedGems) {
-            if (collectedGemInfo.gem.Type != GemType.Bomb) {
-                continue;
+        // 1. Identify Bombs
+        foreach (var info in collectedGems) {
+            if (info.gem != null && info.gem.Type == GemType.Bomb) {
+                bombPositions.Add(info.position);
             }
-
-            bombPositions.Add(collectedGemInfo.position);
-
-            var positions = _explosionOffsets
-                .Select(p => p + collectedGemInfo.position)
-                .Where(p => board.IsValidPos(p) && board.GetAt(p) != null)
-                .ToList();
-
-            destroyPositions.AddRange(positions);
         }
 
-        var collectedInfos = destroyPositions
-            .Except(bombPositions)
+        // 2. Identify Valid Neighbors
+        foreach (var bombPos in bombPositions) {
+            foreach (var offset in _explosionOffsets) {
+                var targetPos = bombPos + offset;
+
+                // Skip if it's another bomb in the current match set (handled later)
+                if (bombPositions.Contains(targetPos)) continue;
+
+                // CRITICAL FIX: Check if the gem exists before adding it.
+                // If GetAt returns null, it was already cleared by the match logic.
+                var targetGem = board.GetAt(targetPos);
+                if (board.IsValidPos(targetPos) && targetGem != null) {
+                    destroyPositions.Add(targetPos);
+                }
+            }
+        }
+
+        // 3. Collect Neighbors
+        var neighborInfos = destroyPositions
             .Distinct()
             .Select(p => new CollectedGemInfo(p, board.GetAt(p)))
             .ToList();
 
-        foreach (var info in collectedInfos) {
+        // Clear neighbors from board immediately
+        foreach (var info in neighborInfos) {
             board.SetAt(info.position, null);
         }
 
-        await gameLogic.DestroyMatches(collectedInfos, ct);
-
+        // 4. Visuals: Destroy Neighbors
+        await boardView.DestroyMatches(neighborInfos.Select(n => n.position), ct);
         await Task.Delay(DESTRUCTION_DELAY_MS, ct);
-        
-        var bombInfos = bombPositions
-            .Select(p => new CollectedGemInfo(p, board.GetAt(p)))
+
+        // 5. Visuals: Destroy Bombs (They were already cleared from model in TryResolveMatches)
+        // We reconstruct the info to ensure we pass valid data to DestroyMatches
+        var bombInfos = collectedGems
+            .Where(c => c.gem.Type == GemType.Bomb)
             .ToList();
 
-        foreach (var info in bombInfos) {
-            board.SetAt(info.position, null);
-        }
-        
-        await gameLogic.DestroyMatches(bombInfos, ct);
-        
-        collectedInfos.AddRange(collectedGems);
-        collectedInfos.AddRange(bombInfos);
+        await boardView.DestroyMatches(bombInfos.Select(b => b.position), ct);
     }
 }
