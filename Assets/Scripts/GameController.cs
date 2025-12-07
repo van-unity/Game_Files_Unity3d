@@ -6,72 +6,28 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-public class GameController : MonoBehaviour {
-    [SerializeField] private int _boardWidth = 7;
-    [SerializeField] private int _boardHeight = 7;
-    [SerializeField] private InputManager _inputManager;
-    [SerializeField] private GemRepository _gemRepository;
-    [SerializeField] private BoardViewSettings _boardViewSettings;
-    [SerializeField] private GameplayScreen _gameplayScreen;
+public class GameController : IDisposable{
+    private readonly CancellationTokenSource _cts;
+    private readonly Board _board;
+    private readonly BoardView _boardView;
+    private readonly GemAbilityProvider _abilityProvider;
+    private readonly InputManager _inputManager;
+    private readonly GameplayScreen _gameplayScreen;
     
-    private Dictionary<string, GameObject> unityObjects;
-    private int score = 0;
-    private float displayScore = 0;
-    private Board _board;
-    private BoardView _boardView;
-
-    private CancellationTokenSource _cts = new();
-    private GemPool _gemPool;
     private bool _canMove;
-    private IMatchCheckStrategy _matchCheckStrategy;
-    private GemAbilityProvider _gemAbilityProvider;
+    private int score = 0;
 
-    private void Awake() {
-        Init();
-    }
-
-    private void Start() {
-        StartGame();
-    }
-
-    // private void Update() {
-    //     displayScore = Mathf.Lerp(displayScore, gameBoard.Score, SC_GameVariables.Instance.scoreSpeed * Time.deltaTime);
-    //     unityObjects["Txt_Score"].GetComponent<TMPro.TextMeshProUGUI>().text = displayScore.ToString("0");
-    // }
-
-    private void Init() {
-        _gemAbilityProvider = new GemAbilityProvider();
-        _gemPool = new GemPool(_gemRepository);
-
-        if (_inputManager == null) {
-            _inputManager = FindObjectOfType<InputManager>();
-        }
-
-        if (_inputManager == null) {
-            throw new NullReferenceException($"[{nameof(GameController)}] InputManager is missing)");
-        }
-
-        unityObjects = new Dictionary<string, GameObject>();
-        GameObject[] _obj = GameObject.FindGameObjectsWithTag("UnityObject");
-        foreach (GameObject g in _obj)
-            unityObjects.Add(g.name, g);
-
-        _matchCheckStrategy = new MatchCheckStrategy();
-        
-        var boardInitializeStrategy = new BoardInitializeStrategy(_matchCheckStrategy, _gemRepository);
-        var boardRefillStrategy = new BoardRefillStrategy(_matchCheckStrategy, _gemRepository);
-        
-        _board = new Board(
-            _boardWidth,
-            _boardHeight,
-            boardInitializeStrategy,
-            boardRefillStrategy,
-            _matchCheckStrategy
-        );
-
-        _boardView = new BoardView(_board, _gemPool, _boardViewSettings);
+    public GameController(Board board, BoardView boardView, GemAbilityProvider abilityProvider, InputManager inputManager, GameplayScreen gameplayScreen) {
+        _cts = new CancellationTokenSource();
+        _board = board;
+        _boardView = boardView;
+        _abilityProvider = abilityProvider;
+        _inputManager = inputManager;
+        _gameplayScreen = gameplayScreen;
 
         Setup();
+        StartGame();
+        _inputManager.Swiped += OnSwiped;
     }
 
     private void Setup() {
@@ -83,10 +39,6 @@ public class GameController : MonoBehaviour {
         _canMove = true;
         score = 0;
         _gameplayScreen.UpdateScore(score);
-    }
-
-    private void OnEnable() {
-        _inputManager.Swiped += OnSwiped;
     }
 
     private async void OnSwiped(SwipeArgs args) {
@@ -150,7 +102,7 @@ public class GameController : MonoBehaviour {
             var abilityTasks = new List<Task>();
 
             foreach (var collectedGems in matches) {
-                var ability = _gemAbilityProvider.GetGemAbility(collectedGems.gem.Type);
+                var ability = _abilityProvider.GetGemAbility(collectedGems.gem.Type);
                 if (ability == null) {
                     continue;
                 }
@@ -170,14 +122,11 @@ public class GameController : MonoBehaviour {
         }
     }
 
-    private void OnDisable() {
-        _inputManager.Swiped -= OnSwiped;
-    }
-
-    private void OnDestroy() {
+    public void Dispose() {
         try {
             _cts.Cancel();
             _cts.Dispose();
+            _inputManager.Swiped -= OnSwiped;
         }
         catch (Exception e) {
             Debug.LogException(e);
