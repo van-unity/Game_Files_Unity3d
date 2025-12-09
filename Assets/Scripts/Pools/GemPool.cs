@@ -18,8 +18,6 @@ namespace Pools {
             _gemPools = new Dictionary<GemColor, Dictionary<GemType, MonoBehaviourObjectPool<GemView>>>();
             _destroyEffectPools =
                 new Dictionary<GemColor, Dictionary<GemType, MonoBehaviourObjectPool<GemDestroyEffect>>>();
-
-            Initialize();
         }
 
         public GemView GetGem(Gem gem) {
@@ -57,7 +55,7 @@ namespace Pools {
             pool.Return(effect);
         }
 
-        private void Initialize() {
+        public void Initialize() {
             foreach (var gemPrefabConfig in gemRepository.AllGems()) {
                 var gemPool = new MonoBehaviourObjectPool<GemView>(gemPrefabConfig.GemPrefab, POOL_SIZE, POOL_GROW_AMOUNT);
                 gemPool.WarmUp();

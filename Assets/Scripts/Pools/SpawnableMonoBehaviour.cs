@@ -2,12 +2,12 @@ using UnityEngine;
 
 namespace Pools {
     public abstract class SpawnableMonoBehaviour<T> : MonoBehaviour, ISpawnable<T> where T : SpawnableMonoBehaviour<T>, ISpawnable<T> {
-        protected IObjectPoolBase<T>  _pool;
+        protected IObjectPool<T>  _pool;
         
         public GameObject GameObject { get; private set; }
         public Transform Transform { get; private set; }
         
-        public virtual void Initialize(IObjectPoolBase<T> pool) {
+        public virtual void Initialize(IObjectPool<T> pool) {
             _pool = pool;
             GameObject = gameObject;
             Transform = GameObject.transform;

@@ -52,6 +52,8 @@ MonoBehaviour:
   _gemRepository: {fileID: 11400000, guid: d36a38d1018d742d292a6caacb066a16, type: 2}
   _boardViewSettings: {fileID: 11400000, guid: e1a450716f9dd40788413109e74a6fe3, type: 2}
   _gameplayScreen: {fileID: 1756865645063514146}
+  _gemBackgroundPrefab: {fileID: 6808739284444387728, guid: 3f39182b81f944a4d93213431acb41c3,
+    type: 3}
 --- !u!1001 &2393351533183528007
 PrefabInstance:
   m_ObjectHideFlags: 0

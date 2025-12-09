@@ -1,22 +1,23 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Pools {
     public interface ISpawnable<T> where T: ISpawnable<T> {
-        void Initialize(IObjectPoolBase<T>  pool);
+        void Initialize(IObjectPool<T>  pool);
         void OnSpawn();
         void OnDespawn();
         void Return();
         void Destroy();
     }
 
-    public interface IObjectPoolBase<T> where T : ISpawnable<T>{
+    public interface IObjectPool<T> where T : ISpawnable<T>{
         void WarmUp();
         T Get();
         void Return(T obj);
         void Clear();
     }
-
-    public abstract class ObjectPoolBase<T> : IObjectPoolBase<T> where T : ISpawnable<T> {
+    
+    public abstract class ObjectPoolBase<T> : IObjectPool<T> where T : ISpawnable<T> {
         private readonly Queue<T> _pool;
         private readonly int _size;
         private readonly int _growAmount;

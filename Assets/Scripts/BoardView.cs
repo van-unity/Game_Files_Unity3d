@@ -22,12 +22,14 @@ public class BoardView {
     private readonly GemView[,] _gems;
     private readonly GemPool _gemPool;
     private readonly BoardViewSettings _settings;
+    private readonly IObjectPool<SpawnableGameObject> _gemBackgroundPool;
     private readonly Transform _container;
 
-    public BoardView(Board board, GemPool gemPool, BoardViewSettings settings) {
+    public BoardView(Board board, GemPool gemPool, BoardViewSettings settings, IObjectPool<SpawnableGameObject> gemBackgroundPool) {
         _board = board;
         _gemPool = gemPool;
         _settings = settings;
+        _gemBackgroundPool = gemBackgroundPool;
 
         _container = new GameObject("BoardView").transform;
 
@@ -35,6 +37,9 @@ public class BoardView {
     }
 
     public void Initialize() {
+        _gemPool.Initialize();
+        _gemBackgroundPool.WarmUp();
+        
         var width = _board.Width;
         var height = _board.Height;
 
@@ -47,6 +52,7 @@ public class BoardView {
 
                 var pos = new Vector2Int(x, y);
                 SpawnGem(pos, gem);
+                SpawnGemBackground(pos);
             }
         }
     }
@@ -178,5 +184,12 @@ public class BoardView {
         gemView.Transform.SetParent(_container);
         gemView.name = "Gem - " + pos.x + ", " + pos.y;
         _gems[pos.x, pos.y] = gemView;
+    }
+
+    private void SpawnGemBackground(Vector2Int pos) {
+        var gemBg = _gemBackgroundPool.Get();
+        gemBg.Transform.position = new Vector3(pos.x, pos.y, 0);
+        gemBg.name = "Gem - " + pos.x + ", " + pos.y + " - Background";
+        gemBg.Transform.SetParent(_container);
     }
 }
