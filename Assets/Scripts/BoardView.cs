@@ -136,9 +136,6 @@ public class BoardView {
         var completion = new TaskCompletionSource<bool>();
         var sequence = DOTween.Sequence();
         
-        var distinctCount = changes.Distinct().ToList().Count;
-        var dif = changes.Count - distinctCount;
-        Debug.LogError(dif);
         foreach (var change in changes) {
             GemView gemView;
             if (change.wasCreated) {
