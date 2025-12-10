@@ -1,3 +1,13 @@
+# Requested Changes 
+
+I have addressed the primary concerns raised in the feedback, specifically focusing on the critical logic and architectural updates.
+
+To be transparent, I am currently balancing tight deadlines at my full-time job alongside caring for my 7-month-old daughter, so I had to strictly time-box my work on these changes. While there may still be minor bugs or polish items remaining, I prioritized the major structural requirements to better demonstrate my engineering approach.
+
+I believe the current state provides a solid foundation for our technical discussion. Please check the last 6 commits to review the specific updates.
+
+Thank you again for the opportunity—I really enjoyed the challenge!
+
 # Match-3 Game Refactoring & Feature Implementation
 
 I'm pleased to submit my work for this match-3 assignment. Thank you for the interesting test opportunity.
