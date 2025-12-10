@@ -28,4 +28,6 @@ public class Gem : IEquatable<Gem> {
     public override int GetHashCode() {
         return HashCode.Combine((int)Color, (int)Type, ScoreValue);
     }
+
+    public override string ToString() => $"{Color} {Type}";
 }

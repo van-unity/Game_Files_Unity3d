@@ -114,10 +114,11 @@ public class GameController : IDisposable{
 
             _score  += matches.Sum(m => m.gem.ScoreValue);
             _gameplayScreen.UpdateScore(_score);
-            await _boardView.DestroyMatches(matches.Select(m => m.position), ct);
-
-            //refil board and check for matches again
             var refillResult = _board.Refill(matches);
+            _boardView.DestroyMatches(matches.Select(m => m.position), ct);
+
+            // await Task.Delay(3000, ct);
+            
             await _boardView.UpdateGems(refillResult, ct);
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DG.Tweening;
@@ -115,7 +116,7 @@ public class BoardView {
             _gems[gem2Indices.x, gem2Indices.y], _gems[gem1Indices.x, gem1Indices.y]);
     }
 
-    public async Task DestroyMatches(IEnumerable<Vector2Int> positions, CancellationToken ct = default) {
+    public void DestroyMatches(IEnumerable<Vector2Int> positions, CancellationToken ct = default) {
         foreach (var pos in positions) {
             var gemView = GetGemAt(pos);
 
@@ -129,18 +130,21 @@ public class BoardView {
             _gemPool.ReleaseGem(gemView);
             _gems[pos.x, pos.y] = null;
         }
-
-        await Task.Delay(_settings.DestroyDelayMS, ct);
     }
 
     public async Task UpdateGems(List<ChangeInfo> changes, CancellationToken ct = default) {
         var completion = new TaskCompletionSource<bool>();
         var sequence = DOTween.Sequence();
+        
+        var distinctCount = changes.Distinct().ToList().Count;
+        var dif = changes.Count - distinctCount;
+        Debug.LogError(dif);
         foreach (var change in changes) {
             GemView gemView;
             if (change.wasCreated) {
                 SpawnGem(change.toPos, change.gem);
                 gemView = GetGemAt(change.toPos);
+                gemView.GameObject.SetActive(false);
             } else {
                 gemView = GetGemAt(change.fromPos.x, change.fromPos.y);
             }
@@ -150,17 +154,15 @@ public class BoardView {
             }
 
             SetGemAt(change.toPos, gemView);
-            var duration = change.creationTime * _settings.GemFallDuration;
 
             var tween = gemView.Transform
-                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), duration)
+                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), _settings.GemFallDuration)
+                .SetDelay(change.creationTime * _settings.GemFallDelay)
                 .From(new Vector3(change.fromPos.x, change.fromPos.y, 0))
                 .SetEase(_settings.GemFallEase);
 
             if (change.wasCreated) {
-                gemView.GameObject.SetActive(false);
                 tween
-                    .SetDelay(change.creationTime * _settings.GemFallDelay)
                     .OnStart(() => gemView.GameObject.SetActive(true));
             }
 

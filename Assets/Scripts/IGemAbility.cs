@@ -66,13 +66,13 @@ public class BombAbility : IGemAbility {
             board.SetAt(info.position, null);
         }
         
-        await boardView.DestroyMatches(neighborInfos.Select(n => n.position), ct);
+        boardView.DestroyMatches(neighborInfos.Select(n => n.position), ct);
         await Task.Delay(DESTRUCTION_DELAY_MS, ct);
         
         var bombInfos = collectedGems
             .Where(c => c.gem.Type == GemType.Bomb)
             .ToList();
 
-        await boardView.DestroyMatches(bombInfos.Select(b => b.position), ct);
+        boardView.DestroyMatches(bombInfos.Select(b => b.position), ct);
     }
 }

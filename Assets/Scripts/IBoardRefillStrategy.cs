@@ -45,15 +45,21 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                 var config = _gemRepository.GetConfig(collectedGem.Key, GemType.Bomb);
                 var bombGem = new Gem(collectedGem.Key, GemType.Bomb, config.ScoreValue);
                 board.SetAt(pos, bombGem);
-                var changeInfo = new ChangeInfo(bombGem, true, 1, new Vector2Int(pos.x, height), pos);
+                var changeInfo = new ChangeInfo(bombGem, true, 0, pos, pos);
                 changes.Add(pos, changeInfo);
             }
         }
 
-        MoveGemsDown(board, changes);
+        var creationTimes = new Dictionary<int, int>();
+
+        MoveGemsDown(board, changes, creationTimes);
+
 
         for (int x = 0; x < width; x++) {
-            var resolveStep = 1;
+            if (!creationTimes.TryGetValue(x, out var creationTime)) {
+                creationTime = 0;
+            }
+
             for (int y = 0; y < height; y++) {
                 if (board.GetAt(x, y) != null) {
                     continue;
@@ -73,21 +79,30 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                     iterations++;
                 }
 
-
-                var changeInfo = new ChangeInfo(newGem, true, width - resolveStep++, new Vector2Int(x, height), pos);
+                var changeInfo = new ChangeInfo(newGem, true, creationTime++, new Vector2Int(x, height), pos);
                 changes.Add(pos, changeInfo);
             }
+
+            creationTimes[x] = creationTime;
         }
 
         return changes.Values.ToList();
     }
 
-    private void MoveGemsDown(Board board, Dictionary<Vector2Int, ChangeInfo> changes) {
+    private void MoveGemsDown(Board board, Dictionary<Vector2Int, ChangeInfo> changes,
+        Dictionary<int, int> creationTimes) {
+        if (creationTimes == null) {
+            creationTimes = new Dictionary<int, int>();
+        }
+
         var width = board.Width;
         var height = board.Height;
 
         for (int x = 0; x < width; x++) {
-            int resolveStep = 1;
+            if (!creationTimes.TryGetValue(x, out var creationTime)) {
+                creationTime = 0;
+            }
+
             for (int y = 0; y < height; y++) {
                 if (board.GetAt(x, y) == null) {
                     continue;
@@ -112,11 +127,13 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                 board.SetAt(finalPos.x, finalPos.y, board.GetAt(fromPos.x, fromPos.y));
                 board.SetAt(fromPos.x, fromPos.y, null);
 
-                var changeInfo = new ChangeInfo(board.GetAt(finalPos.x, finalPos.y), false, width - resolveStep++,
+                var changeInfo = new ChangeInfo(board.GetAt(finalPos.x, finalPos.y), false, creationTime++,
                     fromPos,
                     finalPos);
                 changes.Add(finalPos, changeInfo);
             }
+
+            creationTimes[x] = creationTime;
         }
     }
 }
