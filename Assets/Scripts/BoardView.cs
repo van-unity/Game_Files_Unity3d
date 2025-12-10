@@ -8,7 +8,7 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "Board-View-Settings", menuName = "Match3/Board View Settings")]
 public class BoardViewSettings : ScriptableObject {
-    [field: SerializeField] public float GemFallDuration { get; private set; } = 0.25f;
+    [field: SerializeField] public float GemFallDuration { get; private set; } = .1f;
     [field: SerializeField] public float GemSwapDuration { get; private set; } = 0.25f;
     [field: SerializeField] public float GemFallDelay { get; private set; } = .1f;
     [field: SerializeField] public Ease GemFallEase { get; private set; } = Ease.OutSine;
@@ -25,7 +25,8 @@ public class BoardView {
     private readonly IObjectPool<SpawnableGameObject> _gemBackgroundPool;
     private readonly Transform _container;
 
-    public BoardView(Board board, GemPool gemPool, BoardViewSettings settings, IObjectPool<SpawnableGameObject> gemBackgroundPool) {
+    public BoardView(Board board, GemPool gemPool, BoardViewSettings settings,
+        IObjectPool<SpawnableGameObject> gemBackgroundPool) {
         _board = board;
         _gemPool = gemPool;
         _settings = settings;
@@ -39,7 +40,7 @@ public class BoardView {
     public void Initialize() {
         _gemPool.Initialize();
         _gemBackgroundPool.WarmUp();
-        
+
         var width = _board.Width;
         var height = _board.Height;
 
@@ -65,7 +66,7 @@ public class BoardView {
         if (!_board.IsValidPos(x, y)) {
             return;
         }
-        
+
         _gems[x, y] = gemView;
     }
 
@@ -73,10 +74,10 @@ public class BoardView {
         if (!_board.IsValidPos(pos.x, pos.y)) {
             return;
         }
-        
+
         _gems[pos.x, pos.y] = gemView;
     }
-    
+
     public async Task SwapGems(Vector2Int gem1Indices, Vector2Int gem2Indices, CancellationToken ct = default) {
         var gem1 = GetGemAt(gem1Indices);
         var gem2 = GetGemAt(gem2Indices);
@@ -109,11 +110,11 @@ public class BoardView {
             .OnComplete(() => completion.SetResult(true));
 
         await completion.Task;
-        
+
         (_gems[gem1Indices.x, gem1Indices.y], _gems[gem2Indices.x, gem2Indices.y]) = (
             _gems[gem2Indices.x, gem2Indices.y], _gems[gem1Indices.x, gem1Indices.y]);
     }
-    
+
     public async Task DestroyMatches(IEnumerable<Vector2Int> positions, CancellationToken ct = default) {
         foreach (var pos in positions) {
             var gemView = GetGemAt(pos);
@@ -143,22 +144,24 @@ public class BoardView {
             } else {
                 gemView = GetGemAt(change.fromPos.x, change.fromPos.y);
             }
-            
+
             if (!gemView) {
                 continue;
             }
-            
+
             SetGemAt(change.toPos, gemView);
-            
+            var duration = change.creationTime * _settings.GemFallDuration;
+
             var tween = gemView.Transform
-                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), _settings.GemFallDuration)
-                .SetDelay(change.creationTime * _settings.GemFallDelay)
+                .DOMove(new Vector3(change.toPos.x, change.toPos.y, 0), duration)
                 .From(new Vector3(change.fromPos.x, change.fromPos.y, 0))
-                .SetEase(Ease.OutSine);
+                .SetEase(_settings.GemFallEase);
 
             if (change.wasCreated) {
                 gemView.GameObject.SetActive(false);
-                tween.OnStart(() => gemView.GameObject.SetActive(true));
+                tween
+                    .SetDelay(change.creationTime * _settings.GemFallDelay)
+                    .OnStart(() => gemView.GameObject.SetActive(true));
             }
 
             sequence.Join(tween);

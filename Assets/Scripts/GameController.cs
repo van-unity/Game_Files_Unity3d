@@ -100,16 +100,16 @@ public class GameController : IDisposable{
             }
 
             var abilityTasks = new List<Task>();
-
+            
             foreach (var collectedGems in matches) {
                 var ability = _abilityProvider.GetGemAbility(collectedGems.gem.Type);
                 if (ability == null) {
                     continue;
                 }
-
+            
                 abilityTasks.Add(ability.Execute(matches, _board, _boardView, ct));
             }
-
+            
             await Task.WhenAll(abilityTasks);
 
             _score  += matches.Sum(m => m.gem.ScoreValue);

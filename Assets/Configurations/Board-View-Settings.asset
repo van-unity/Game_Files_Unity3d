@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: Board-View-Settings
   m_EditorClassIdentifier: Assembly-CSharp::BoardViewSettings
-  <GemFallDuration>k__BackingField: 0.25
+  <GemFallDuration>k__BackingField: 0.06
   <GemSwapDuration>k__BackingField: 0.25
-  <GemFallDelay>k__BackingField: 0.05
-  <GemFallEase>k__BackingField: 3
+  <GemFallDelay>k__BackingField: 0.01
+  <GemFallEase>k__BackingField: 6
   <GemSwapEase>k__BackingField: 6
   <DestroyDelayMS>k__BackingField: 100
   <UpdateDelayMS>k__BackingField: 100
