@@ -1,4 +1,5 @@
 using UnityEngine;
+using Zenject;
 
 public interface IBoardInitializeStrategy {
     void Execute(Board board);
@@ -10,6 +11,7 @@ public class BoardInitializeStrategy : IBoardInitializeStrategy {
     private readonly IMatchCheckStrategy _matchCheckStrategy;
     private readonly GemRepository _gemRepository;
 
+    [Inject]
     public BoardInitializeStrategy(IMatchCheckStrategy matchCheckStrategy, GemRepository gemRepository) {
         _matchCheckStrategy = matchCheckStrategy;
         _gemRepository = gemRepository;

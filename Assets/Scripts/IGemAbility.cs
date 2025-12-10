@@ -3,10 +3,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Zenject;
 
 public class GemAbilityProvider {
     private readonly Dictionary<GemType, IGemAbility> _gemAbilities;
 
+    [Inject]
     public GemAbilityProvider() {
         _gemAbilities = new Dictionary<GemType, IGemAbility>() {
             { GemType.Bomb, new BombAbility() }

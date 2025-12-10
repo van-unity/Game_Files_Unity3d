@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Zenject;
 
 public enum SwipeDirection {
     Left,
@@ -30,14 +31,9 @@ public class InputManager : MonoBehaviour {
     private Vector3 _mouseDownPos;
     private bool _isDragging;
 
-    private void Awake() {
-        if (_camera == null) {
-            _camera = Camera.main;
-        }
-
-        if (_camera == null) {
-            throw new NullReferenceException($"[{nameof(InputManager)}]Camera missing");
-        }
+    [Inject]
+    public void Bind(Camera c) {
+        _camera = c;
     }
 
     private void Update() {

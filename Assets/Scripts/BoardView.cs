@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DG.Tweening;
 using Pools;
 using UnityEngine;
+using Zenject;
 
 [CreateAssetMenu(fileName = "Board-View-Settings", menuName = "Match3/Board View Settings")]
 public class BoardViewSettings : ScriptableObject {
@@ -25,7 +26,7 @@ public class BoardView {
     private readonly BoardViewSettings _settings;
     private readonly IObjectPool<SpawnableGameObject> _gemBackgroundPool;
     private readonly Transform _container;
-
+    
     public BoardView(Board board, GemPool gemPool, BoardViewSettings settings,
         IObjectPool<SpawnableGameObject> gemBackgroundPool) {
         _board = board;
@@ -39,7 +40,6 @@ public class BoardView {
     }
 
     public void Initialize() {
-        _gemPool.Initialize();
         _gemBackgroundPool.WarmUp();
 
         var width = _board.Width;
@@ -135,7 +135,7 @@ public class BoardView {
     public async Task UpdateGems(List<ChangeInfo> changes, CancellationToken ct = default) {
         var completion = new TaskCompletionSource<bool>();
         var sequence = DOTween.Sequence();
-        
+
         foreach (var change in changes) {
             GemView gemView;
             if (change.wasCreated) {

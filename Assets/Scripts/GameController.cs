@@ -3,36 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TMPro;
 using UnityEngine;
+using Zenject;
 
-public class GameController : IDisposable{
+public class GameController : IInitializable, IDisposable {
     private readonly CancellationTokenSource _cts;
     private readonly Board _board;
     private readonly BoardView _boardView;
     private readonly GemAbilityProvider _abilityProvider;
     private readonly InputManager _inputManager;
     private readonly GameplayScreen _gameplayScreen;
-    
+
     private bool _canMove;
     private int _score;
 
-    public GameController(Board board, BoardView boardView, GemAbilityProvider abilityProvider, InputManager inputManager, GameplayScreen gameplayScreen) {
+    public GameController(Board board, BoardView boardView, GemAbilityProvider abilityProvider,
+        InputManager inputManager, GameplayScreen gameplayScreen) {
         _cts = new CancellationTokenSource();
         _board = board;
         _boardView = boardView;
         _abilityProvider = abilityProvider;
         _inputManager = inputManager;
         _gameplayScreen = gameplayScreen;
-
-        Setup();
-        StartGame();
-        _inputManager.Swiped += OnSwiped;
     }
 
-    private void Setup() {
+    public void Initialize() {
         _board.Initialize();
         _boardView.Initialize();
+        _inputManager.Swiped += OnSwiped;
+        StartGame();
     }
 
     public void StartGame() {
@@ -100,25 +99,25 @@ public class GameController : IDisposable{
             }
 
             var abilityTasks = new List<Task>();
-            
+
             foreach (var collectedGems in matches) {
                 var ability = _abilityProvider.GetGemAbility(collectedGems.gem.Type);
                 if (ability == null) {
                     continue;
                 }
-            
+
                 abilityTasks.Add(ability.Execute(matches, _board, _boardView, ct));
             }
-            
+
             await Task.WhenAll(abilityTasks);
 
-            _score  += matches.Sum(m => m.gem.ScoreValue);
+            _score += matches.Sum(m => m.gem.ScoreValue);
             _gameplayScreen.UpdateScore(_score);
             var refillResult = _board.Refill(matches);
             _boardView.DestroyMatches(matches.Select(m => m.position), ct);
 
             // await Task.Delay(3000, ct);
-            
+
             await _boardView.UpdateGems(refillResult, ct);
         }
     }

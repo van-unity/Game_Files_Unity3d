@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Zenject;
 
 public interface IBoardRefillStrategy {
     List<ChangeInfo> Execute(Board board, IEnumerable<CollectedGemInfo> collectedGems = null);
@@ -12,6 +13,7 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
     private readonly IMatchCheckStrategy _matchCheckStrategy;
     private readonly GemRepository _gemRepository;
 
+    [Inject]
     public BoardRefillStrategy(IMatchCheckStrategy matchCheckStrategy, GemRepository gemRepository) {
         _matchCheckStrategy = matchCheckStrategy;
         _gemRepository = gemRepository;

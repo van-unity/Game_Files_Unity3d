@@ -1,10 +1,11 @@
 using UnityEngine;
+using Zenject;
 
 namespace Pools {
     public class GameObjectPool : ObjectPoolBase<SpawnableGameObject> {
         private readonly SpawnableGameObject _prefab;
         private readonly Transform _container;
-
+        
         public GameObjectPool(SpawnableGameObject prefab, int size, int growAmount) : base(size, growAmount) {
             _prefab = prefab;
             _container = new GameObject($"{prefab.name}-POOL").transform;

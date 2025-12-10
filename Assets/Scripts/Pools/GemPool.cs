@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using UnityEngine;
+using Zenject;
 
 namespace Pools {
-    public class GemPool {
+    public class GemPool : IInitializable {
         private const int POOL_SIZE = 50;
         private const int POOL_GROW_AMOUNT = 10;
 
@@ -21,7 +23,8 @@ namespace Pools {
         }
 
         public GemView GetGem(Gem gem) {
-            if (gem == null || !_gemPools.TryGetValue(gem.Color, out var poolByType) || !poolByType.TryGetValue(gem.Type, out var pool)) {
+            if (gem == null || !_gemPools.TryGetValue(gem.Color, out var poolByType) ||
+                !poolByType.TryGetValue(gem.Type, out var pool)) {
                 return null;
             }
 
@@ -57,13 +60,15 @@ namespace Pools {
 
         public void Initialize() {
             foreach (var gemPrefabConfig in gemRepository.AllGems()) {
-                var gemPool = new MonoBehaviourObjectPool<GemView>(gemPrefabConfig.GemPrefab, POOL_SIZE, POOL_GROW_AMOUNT);
+                var gemPool =
+                    new MonoBehaviourObjectPool<GemView>(gemPrefabConfig.GemPrefab, POOL_SIZE, POOL_GROW_AMOUNT);
                 gemPool.WarmUp();
                 if (_gemPools.TryGetValue(gemPrefabConfig.Color, out var poolByType)) {
                     poolByType[gemPrefabConfig.Type] = gemPool;
                 } else {
                     _gemPools.Add(gemPrefabConfig.Color,
-                        new Dictionary<GemType, MonoBehaviourObjectPool<GemView>> { { gemPrefabConfig.Type, gemPool } });
+                        new Dictionary<GemType, MonoBehaviourObjectPool<GemView>>
+                            { { gemPrefabConfig.Type, gemPool } });
                 }
 
                 var destroyEffectPool =

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Zenject;
 
 public class Board {
     private readonly IBoardInitializeStrategy _initializeStrategy;
@@ -10,7 +11,7 @@ public class Board {
 
     public int Height { get; }
     public int Width { get; }
-
+    
     public Board(
         int width,
         int height,
