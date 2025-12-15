@@ -47,7 +47,7 @@ public class BoardRefillStrategy : IBoardRefillStrategy {
                 var config = _gemRepository.GetConfig(collectedGem.Key, GemType.Bomb);
                 var bombGem = new Gem(collectedGem.Key, GemType.Bomb, config.ScoreValue);
                 board.SetAt(pos, bombGem);
-                var changeInfo = new ChangeInfo(bombGem, true, 0, pos, pos);
+                var changeInfo = new ChangeInfo(bombGem, true, 0, new Vector2Int(pos.x, height), pos);
                 changes.Add(pos, changeInfo);
             }
         }

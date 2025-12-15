@@ -1,16 +1,12 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
-using Zenject;
 
 public class GemAbilityProvider {
     private readonly Dictionary<GemType, IGemAbility> _gemAbilities;
 
-    [Inject]
     public GemAbilityProvider() {
         _gemAbilities = new Dictionary<GemType, IGemAbility>() {
+            { GemType.Regular , new RegularGemAbility() },
             { GemType.Bomb, new BombAbility() }
         };
     }
@@ -19,12 +15,17 @@ public class GemAbilityProvider {
 }
 
 public interface IGemAbility {
-    Task Execute(List<CollectedGemInfo> collectedGems, Board board, BoardView boardView,
-        CancellationToken ct = default);
+    void Execute(Board board, CollectedGemInfo self, HashSet<CollectedGemInfo> collectedGems);
+}
+
+public class RegularGemAbility : IGemAbility {
+    public void Execute(Board board, CollectedGemInfo self, HashSet<CollectedGemInfo> collectedGems) {
+        collectedGems.Add(self);
+    }
 }
 
 public class BombAbility : IGemAbility {
-    private const int DESTRUCTION_DELAY_MS = 250;
+    private const int DESTRUCTION_DELAY_MS = 2000;
 
     private readonly Vector2Int[] _explosionOffsets = {
         // 3x3 square
@@ -34,47 +35,23 @@ public class BombAbility : IGemAbility {
         new(2, 0), new(-2, 0), new(0, 2), new(0, -2)
     };
 
-    public async Task Execute(List<CollectedGemInfo> collectedGems, Board board, BoardView boardView,
-        CancellationToken ct = default) {
-        var destroyPositions = new List<Vector2Int>();
-        var bombPositions = new HashSet<Vector2Int>(); // Use HashSet for fast lookup
-        
-        foreach (var info in collectedGems) {
-            if (info.gem != null && info.gem.Type == GemType.Bomb) {
-                bombPositions.Add(info.position);
-            }
-        }
+    public void Execute(Board board, CollectedGemInfo self, HashSet<CollectedGemInfo> collectedGems) {
+        self.destroyDelay = DESTRUCTION_DELAY_MS;
+        collectedGems.Add(self);
 
-        //identify valid neighbors
-        foreach (var bombPos in bombPositions) {
-            foreach (var offset in _explosionOffsets) {
-                var targetPos = bombPos + offset;
-                
-                if (bombPositions.Contains(targetPos)) continue;
-                
-                var targetGem = board.GetAt(targetPos);
-                if (board.IsValidPos(targetPos) && targetGem != null) {
-                    destroyPositions.Add(targetPos);
-                }
+        foreach (var offset in _explosionOffsets) {
+            var pos = self.position + offset;
+            if (!board.IsValidPos(pos)) {
+                continue;
             }
-        }
-        
-        var neighborInfos = destroyPositions
-            .Distinct()
-            .Select(p => new CollectedGemInfo(p, board.GetAt(p)))
-            .ToList();
-        
-        foreach (var info in neighborInfos) {
-            board.SetAt(info.position, null);
-        }
-        
-        boardView.DestroyMatches(neighborInfos.Select(n => n.position), ct);
-        await Task.Delay(DESTRUCTION_DELAY_MS, ct);
-        
-        var bombInfos = collectedGems
-            .Where(c => c.gem.Type == GemType.Bomb)
-            .ToList();
 
-        boardView.DestroyMatches(bombInfos.Select(b => b.position), ct);
+            var gem = board.GetAt(pos);
+            if (gem == null || gem.Type == GemType.Bomb) {
+                continue;
+            }
+
+            var info = new CollectedGemInfo(pos, gem, DESTRUCTION_DELAY_MS);
+            collectedGems.Add(info);
+        }
     }
 }

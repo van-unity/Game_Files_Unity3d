@@ -10,7 +10,6 @@ public class GameController : IInitializable, IDisposable {
     private readonly CancellationTokenSource _cts;
     private readonly Board _board;
     private readonly BoardView _boardView;
-    private readonly GemAbilityProvider _abilityProvider;
     private readonly InputManager _inputManager;
     private readonly GameplayScreen _gameplayScreen;
 
@@ -22,7 +21,6 @@ public class GameController : IInitializable, IDisposable {
         _cts = new CancellationTokenSource();
         _board = board;
         _boardView = boardView;
-        _abilityProvider = abilityProvider;
         _inputManager = inputManager;
         _gameplayScreen = gameplayScreen;
     }
@@ -98,26 +96,12 @@ public class GameController : IInitializable, IDisposable {
                 throw new OperationCanceledException();
             }
 
-            var abilityTasks = new List<Task>();
-
-            foreach (var collectedGems in matches) {
-                var ability = _abilityProvider.GetGemAbility(collectedGems.gem.Type);
-                if (ability == null) {
-                    continue;
-                }
-
-                abilityTasks.Add(ability.Execute(matches, _board, _boardView, ct));
-            }
-
-            await Task.WhenAll(abilityTasks);
-
             _score += matches.Sum(m => m.gem.ScoreValue);
             _gameplayScreen.UpdateScore(_score);
+            
+            await _boardView.DestroyMatches(matches, ct);
+            
             var refillResult = _board.Refill(matches);
-            _boardView.DestroyMatches(matches.Select(m => m.position), ct);
-
-            // await Task.Delay(3000, ct);
-
             await _boardView.UpdateGems(refillResult, ct);
         }
     }

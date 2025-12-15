@@ -1,23 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DG.Tweening;
 using Pools;
 using UnityEngine;
-using Zenject;
-
-[CreateAssetMenu(fileName = "Board-View-Settings", menuName = "Match3/Board View Settings")]
-public class BoardViewSettings : ScriptableObject {
-    [field: SerializeField] public float GemFallDuration { get; private set; } = .1f;
-    [field: SerializeField] public float GemSwapDuration { get; private set; } = 0.25f;
-    [field: SerializeField] public float GemFallDelay { get; private set; } = .1f;
-    [field: SerializeField] public Ease GemFallEase { get; private set; } = Ease.OutSine;
-    [field: SerializeField] public Ease GemSwapEase { get; private set; } = Ease.OutCirc;
-    [field: SerializeField] public int DestroyDelayMS { get; private set; } = 100;
-    [field: SerializeField] public int UpdateDelayMS { get; private set; } = 100;
-}
 
 public class BoardView {
     private readonly Board _board;
@@ -26,7 +13,7 @@ public class BoardView {
     private readonly BoardViewSettings _settings;
     private readonly IObjectPool<SpawnableGameObject> _gemBackgroundPool;
     private readonly Transform _container;
-    
+
     public BoardView(Board board, GemPool gemPool, BoardViewSettings settings,
         IObjectPool<SpawnableGameObject> gemBackgroundPool) {
         _board = board;
@@ -116,21 +103,39 @@ public class BoardView {
             _gems[gem2Indices.x, gem2Indices.y], _gems[gem1Indices.x, gem1Indices.y]);
     }
 
-    public void DestroyMatches(IEnumerable<Vector2Int> positions, CancellationToken ct = default) {
-        foreach (var pos in positions) {
-            var gemView = GetGemAt(pos);
+    public async Task DestroyMatches(IEnumerable<CollectedGemInfo> infos, CancellationToken ct = default) {
+        var tasks = new List<Task>();
 
-            if (!gemView) {
-                continue;
+        foreach (var info in infos) {
+            var gemView = GetGemAt(info.position);
+            if (!gemView) continue;
+
+            SetGemAt(info.position, null);
+
+            var tcs = new TaskCompletionSource<bool>();
+
+            TweenCallback callback = () => {
+                _gemPool.ReleaseGem(gemView);
+                var destroyEffect = _gemPool.GetDestroyEffect(gemView.Gem);
+                destroyEffect.Transform.position = gemView.Transform.position;
+
+                tcs.SetResult(true);
+            };
+
+            if (info.destroyDelay > 0) {
+                DOTween.Sequence()
+                    .AppendInterval(info.destroyDelay / 1000f)
+                    .AppendCallback(callback);
+            } else {
+                callback();
             }
 
-            var destroyEffect = _gemPool.GetDestroyEffect(gemView.Gem);
-            destroyEffect.Transform.position = gemView.Transform.position;
-
-            _gemPool.ReleaseGem(gemView);
-            _gems[pos.x, pos.y] = null;
+            tasks.Add(tcs.Task);
         }
+
+        await Task.WhenAll(tasks);
     }
+
 
     public async Task UpdateGems(List<ChangeInfo> changes, CancellationToken ct = default) {
         var completion = new TaskCompletionSource<bool>();

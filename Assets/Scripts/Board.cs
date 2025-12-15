@@ -1,23 +1,24 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Zenject;
 
 public class Board {
     private readonly IBoardInitializeStrategy _initializeStrategy;
     private readonly IBoardRefillStrategy _refillStrategy;
     private readonly IMatchCheckStrategy _matchCheckStrategy;
+    private readonly GemAbilityProvider _gemAbilityProvider;
     private readonly Gem[,] _state;
 
     public int Height { get; }
     public int Width { get; }
-    
+
     public Board(
         int width,
         int height,
         IBoardInitializeStrategy initializeStrategy,
         IBoardRefillStrategy refillStrategy,
-        IMatchCheckStrategy matchCheckStrategy
+        IMatchCheckStrategy matchCheckStrategy,
+        GemAbilityProvider gemAbilityProvider
     ) {
         Width = width;
         Height = height;
@@ -25,6 +26,7 @@ public class Board {
         _initializeStrategy = initializeStrategy;
         _refillStrategy = refillStrategy;
         _matchCheckStrategy = matchCheckStrategy;
+        _gemAbilityProvider = gemAbilityProvider;
 
         _state = new Gem[width, height];
     }
@@ -32,7 +34,7 @@ public class Board {
     public void Initialize() {
         _initializeStrategy.Execute(this);
     }
-    
+
     public bool TrySwapGems(Vector2Int pos1, Vector2Int pos2) {
         if (!IsValidPos(pos1) || !IsValidPos(pos2)) {
             return false;
@@ -44,21 +46,30 @@ public class Board {
 
     public bool HasMatchAt(Vector2Int pos) => _matchCheckStrategy.MatchesAtGameplay(this, pos);
 
-    public bool TryResolveMatches(out List<CollectedGemInfo> result) {
+    public bool TryResolveMatches(out HashSet<CollectedGemInfo> matches) {
         var matchPositions = _matchCheckStrategy.GetMatches(this).ToList();
 
         if (matchPositions.Count == 0) {
-            result = null;
+            matches = null;
             return false;
         }
 
-        result = new List<CollectedGemInfo>();
+        matches = new HashSet<CollectedGemInfo>();
+        foreach (var pos in matchPositions) {
+            var gem = GetAt(pos);
+            if (gem == null) {
+                continue;
+            }
 
-        foreach (var match in matchPositions) {
-            var info = new CollectedGemInfo(match, GetAt(match));
-            result.Add(info);
+            var info = new CollectedGemInfo(pos, gem);
 
-            _state[match.x, match.y] = null;
+            var ability = _gemAbilityProvider.GetGemAbility(gem.Type);
+            
+            ability?.Execute(this, info, matches);
+        }
+
+        foreach (var pos in matches) {
+            SetAt(pos.position, null);
         }
 
         return true;

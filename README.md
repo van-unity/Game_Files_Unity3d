@@ -1,14 +1,14 @@
-# Requested Changes 
+# Refactoring
 
-I have addressed the primary concerns raised in the feedback, specifically focusing on the critical logic and architectural updates.
+1. In some places probably would be better to implement Zenject’s IInitializable interface, but I decided to not to to initialize those things whenever I actually need.
+2. There is no singleton in current implementation. 
+   As for the board size for example, I imagine that in a real implementation we will have some Level data and we will create board with the size of level(maybe with some additional data like gem types that can be used in particular level))
+3. For matching the bomb(special piece) I'm a confused because the original task description says that
+the special piece can match with same type of pieces or with 2 or more regular piecees with the same color.
+I implemented the original requirement but changing it to any other logic is a matter of changing only the BombAbility(in current case) so the change is easy!
+4. I didn't create factories for all entities that are being created by new because that doesn't add any value in this case
 
-To be transparent, I am currently balancing tight deadlines at my full-time job alongside caring for my 7-month-old daughter, so I had to strictly time-box my work on these changes. While there may still be minor bugs or polish items remaining, I prioritized the major structural requirements to better demonstrate my engineering approach.
-
-I believe the current state provides a solid foundation for our technical discussion. Please check the last 6 commits to review the specific updates.
-
-Thank you again for the opportunity—I really enjoyed the challenge!
-
-# Match-3 Game Refactoring & Feature Implementation
+# Match-3 Game Implementation
 
 I'm pleased to submit my work for this match-3 assignment. Thank you for the interesting test opportunity.
 

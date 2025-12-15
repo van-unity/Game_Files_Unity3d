@@ -1,13 +1,15 @@
 using System;
 using UnityEngine;
 
-public readonly struct CollectedGemInfo : IEquatable<CollectedGemInfo> {
-    public readonly Vector2Int position;
-    public readonly Gem gem;
+public struct CollectedGemInfo : IEquatable<CollectedGemInfo> {
+    public Vector2Int position;
+    public Gem gem;
+    public int destroyDelay;
 
-    public CollectedGemInfo(Vector2Int position, Gem gem) {
+    public CollectedGemInfo(Vector2Int position, Gem gem, int destroyDelay = 0) {
         this.position = position;
         this.gem = gem;
+        this.destroyDelay = destroyDelay;
     }
 
     public bool Equals(CollectedGemInfo other) {
